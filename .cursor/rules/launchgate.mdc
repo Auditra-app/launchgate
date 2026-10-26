@@ -1,0 +1,48 @@
+---
+description: Enterprise Production Readiness & Preflight Security Standards
+globs: *
+alwaysApply: true
+---
+
+# LaunchGate Production Readiness Standards (Cursor Agent)
+
+Before implementing, refactoring, or approving any code changes in this repository, strictly adhere to the 12 LaunchGate production gates:
+
+## 1. Secrets & Environment Hygiene (Gate 1)
+- Never hardcode secrets, tokens, API keys, private certificates, or database connection strings.
+- Never expose private credentials to client bundles via `NEXT_PUBLIC_`, `VITE_`, `REACT_APP_`, or `PUBLIC_` prefixes.
+- Keep `.env*` strictly ignored in `.gitignore` and provide an up-to-date `.env.example`.
+
+## 2. Authentication, Session & BOLA/IDOR (Gate 2)
+- All mutating endpoints (POST, PUT, PATCH, DELETE) and private data endpoints MUST verify user session server-side.
+- Prevent Broken Object Level Authorization (BOLA/IDOR): Always scope database queries by authenticated `user_id` / `tenant_id`.
+- Enforce Role-Based Access Control (RBAC) on admin procedures.
+
+## 3. Database Security & Input Validation (Gate 3)
+- Never use raw SQL string concatenation. Always use parameterized queries or type-safe ORMs.
+- Enforce PostgreSQL / Supabase Row-Level Security (RLS) on all public tables.
+- Every API endpoint MUST validate request body, query params, and URL params with strict schemas (Zod, Valibot, Yup, Pydantic).
+
+## 4. Webhooks, Idempotency & Rate Limiting (Gate 4)
+- Incoming webhooks (Stripe, Clerk, custom) MUST verify raw cryptographic signatures before parsing payload.
+- Implement idempotency keys to safely handle duplicate webhook deliveries.
+- Apply rate limiting to all public endpoints (auth, reset-password, AI inference).
+
+## 5. AI / LLM Guardrails (Gate 5)
+- All AI SDK calls (Gemini, OpenAI, Anthropic) MUST run strictly server-side.
+- Set strict `maxOutputTokens`, timeouts, and structured schema parsing.
+- Enforce per-user rate limits and credit quotas.
+
+## 6. Observability & Error Handling (Gate 6)
+- Setup Sentry with environment tags and scrub sensitive PII from telemetry before sending.
+- Wrap UI trees with React Error Boundaries; prevent unhandled promise rejections.
+
+## 7. Performance & Resource Leaks (Gate 7)
+- Eliminate N+1 queries. Always paginate list queries.
+- Clean up timers, subscriptions, and WebSocket connections in effect cleanups.
+
+## 8. Verification Command
+Run preflight verification at any time:
+```bash
+node ./cli.js --scan --fail-on-p0
+```

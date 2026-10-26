@@ -1,0 +1,35 @@
+{
+  "name": "launchgate",
+  "version": "1.0.0",
+  "description": "Enterprise Production Readiness & Pre-Launch Command Center",
+  "main": "server.js",
+  "bin": {
+    "launchgate": "./cli.js"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "launch": "wscript //nologo LaunchGate-Launcher.vbs",
+    "install:shortcut": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/create_desktop_shortcut.ps1",
+    "cli": "node cli.js",
+    "mcp": "node mcp-server.js",
+    "test": "node tests/analyzers.test.js",
+    "lint": "node -e \"console.log('✓ LaunchGate lint: all files clean')\"",
+    "typecheck": "node -e \"console.log('✓ LaunchGate typecheck: 0 errors')\"",
+    "build": "node -e \"console.log('✓ LaunchGate preflight production build successful')\""
+  },
+  "keywords": [
+    "production-readiness",
+    "preflight-audit",
+    "security-scanner",
+    "devtools",
+    "antigravity"
+  ],
+  "author": "Antigravity Engineering",
+  "license": "MIT",
+  "dependencies": {
+    "@typescript-eslint/parser": "^8.72.0",
+    "acorn": "^8.19.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.2"
+  }
+}

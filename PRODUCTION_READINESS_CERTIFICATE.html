@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Production Readiness Certificate — App Checker Tool</title>
+  <style>
+    @page { size: A4 portrait; margin: 15mm; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #0f172a;
+      background: #ffffff;
+      margin: 0;
+      padding: 24px;
+    }
+    .cert-frame {
+      border: 3px solid #4f46e5;
+      padding: 32px;
+      border-radius: 12px;
+      position: relative;
+    }
+    .cert-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 20px;
+      margin-bottom: 24px;
+    }
+    .cert-seal {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: #4f46e5;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+    }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 12px; }
+    th { text-align: left; padding: 8px 12px; background: #f8fafc; border-bottom: 2px solid #cbd5e1; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .print-btn-bar { margin-bottom: 20px; display: flex; justify-content: flex-end; gap: 8px; }
+    .print-btn {
+      background: #4f46e5; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px;
+    }
+    @media print {
+      .print-btn-bar { display: none; }
+      body { padding: 0; }
+      .cert-frame { border: 2px solid #4f46e5; }
+    }
+  </style>
+</head>
+<body>
+  <div class="print-btn-bar">
+    <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+  </div>
+  <div class="cert-frame">
+    <div class="cert-header">
+      <div>
+        <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #6366f1; font-weight: 700;">LaunchGate Production Readiness</div>
+        <h1 style="margin: 4px 0; font-size: 26px; color: #0f172a;">Production Release Certificate</h1>
+        <div style="font-size: 13px; color: #64748b;">Project: <strong>App Checker Tool</strong> (F:\App Checker Tool)</div>
+      </div>
+      <div class="cert-seal">
+        <span style="font-size: 18px;">★</span>
+        <span>VERIFIED</span>
+      </div>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+      <div>
+        <div style="font-size: 11px; color: #64748b; text-transform: uppercase;">Readiness Score</div>
+        <div style="font-size: 28px; font-weight: 800; color: #4f46e5;">83%</div>
+      </div>
+      <div>
+        <div style="font-size: 11px; color: #64748b; text-transform: uppercase;">Release Verdict</div>
+        <div style="font-size: 16px; font-weight: 700; margin-top: 6px;">🛑 LAUNCH BLOCKED (CRITICAL ISSUES DETECTED)</div>
+      </div>
+      <div>
+        <div style="font-size: 11px; color: #64748b; text-transform: uppercase;">Audit Token Hash</div>
+        <div style="font-size: 12px; font-family: monospace; font-weight: 700; margin-top: 8px;">LG-AE2CEC1F9ECABE64FB6A524A5CA44979</div>
+      </div>
+      <div>
+        <div style="font-size: 11px; color: #64748b; text-transform: uppercase;">Certified Date</div>
+        <div style="font-size: 12px; font-family: monospace; margin-top: 8px;">10/22/2026</div>
+      </div>
+    </div>
+
+    <h3 style="font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; color: #334155;">12-Gate Audit Verification Matrix</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Gate</th>
+          <th>Verification Domain</th>
+          <th>Status</th>
+          <th>Score</th>
+          <th>Audit &amp; Sign-off Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        
+      <tr>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-weight: 600;">G1</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0;">Secrets, Credentials & Environment Hygiene</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; color: #dc2626; font-weight: 700;">FAILED</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-family: monospace;">70%</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-size: 11px; color: #64748b;">—</td>
+      </tr>
+    
+      <tr>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-weight: 600;">G2</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0;">Authentication, Session Integrity & BOLA/IDOR Defense</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; color: #059669; font-weight: 700;">PASSED</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-family: monospace;">100%</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-size: 11px; color: #64748b;">—</td>
+      </tr>
+    
+      <tr>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-weight: 600;">G3</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0;">Database Security, Schemas, Indexes & Input Validation</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; color: #059669; font-weight: 700;">PASSED</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-family: monospace;">100%</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-size: 11px; color: #64748b;">—</td>
+      </tr>
+    
+      <tr>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-weight: 600;">G4</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0;">APIs, Webhooks, Idempotency & Abuse Defenses</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; color: #059669; font-weight: 700;">PASSED</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-family: monospace;">100%</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-size: 11px; color: #64748b;">—</td>
+      </tr>
+    
+      <tr>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-weight: 600;">G5</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0;">AI / LLM Cost, Quota & Prompt Injection Guards</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; color: #059669; font-weight: 700;">PASSED</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-family: monospace;">100%</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-size: 11px; color: #64748b;">—</td>
+      </tr>
+    
+      <tr>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-weight: 600;">G6</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0;">Observability, Sentry & Error Resilience</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; color: #d97706; font-weight: 700;">WARNING</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-family: monospace;">0%</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-size: 11px; color: #64748b;">—</td>
+      </tr>
+    
+      <tr>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-weight: 600;">G7</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0;">Performance, Bundling, Caching & Resource Leaks</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; color: #059669; font-weight: 700;">PASSED</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-family: monospace;">100%</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-size: 11px; color: #64748b;">—</td>
+      </tr>
+    
+      <tr>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-weight: 600;">G8</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0;">Design Consistency, UX States & Localization (LTR/RTL)</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; color: #059669; font-weight: 700;">PASSED</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-family: monospace;">95%</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-size: 11px; color: #64748b;">—</td>
+      </tr>
+    
+      <tr>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-weight: 600;">G9</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0;">SEO, Metadata, Legal & Commercial Readiness</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; color: #d97706; font-weight: 700;">WARNING</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-family: monospace;">70%</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-size: 11px; color: #64748b;">—</td>
+      </tr>
+    
+      <tr>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-weight: 600;">G10</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0;">Code Hygiene, Duplication & Context7 SDK Audit</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; color: #059669; font-weight: 700;">PASSED</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-family: monospace;">95%</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-size: 11px; color: #64748b;">—</td>
+      </tr>
+    
+      <tr>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-weight: 600;">G11</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0;">Infrastructure, CI/CD & Deployment Configs</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; color: #d97706; font-weight: 700;">WARNING</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-family: monospace;">65%</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-size: 11px; color: #64748b;">—</td>
+      </tr>
+    
+      <tr>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-weight: 600;">G12</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0;">Preflight CLI Suite, Clean Build & Release Certificate</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; color: #059669; font-weight: 700;">PASSED</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-family: monospace;">100%</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-size: 11px; color: #64748b;">—</td>
+      </tr>
+    
+      </tbody>
+    </table>
+
+    <div style="margin-top: 32px; display: flex; justify-content: space-between; border-top: 1px solid #e2e8f0; padding-top: 20px;">
+      <div style="font-size: 11px; color: #64748b; max-width: 360px;">
+        This document serves as formal engineering verification that the target application meets enterprise production readiness standards.
+      </div>
+      <div style="text-align: right;">
+        <div style="font-size: 12px; font-weight: 700; color: #0f172a;">LaunchGate Preflight Engine</div>
+        <div style="font-size: 11px; font-family: monospace; color: #6366f1;">Cryptographically Signed: LG-AE2CEC1F9ECABE64FB6A524A5CA44979</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

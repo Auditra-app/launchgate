@@ -1,0 +1,4 @@
+# LaunchGate Local Preflight Command Center
+# Localhost only - Disallow crawler indexing
+User-agent: *
+Disallow: /

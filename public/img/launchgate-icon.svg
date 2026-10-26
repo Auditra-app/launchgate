@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <!-- Background Gradients -->
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#121826"/>
+      <stop offset="50%" stop-color="#0b0f19"/>
+      <stop offset="100%" stop-color="#070a10"/>
+    </linearGradient>
+
+    <linearGradient id="border-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.6"/>
+      <stop offset="50%" stop-color="#6366f1" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#1e293b" stop-opacity="0.8"/>
+    </linearGradient>
+
+    <!-- Neon Glows -->
+    <filter id="glow-cyan" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+
+    <filter id="glow-strong" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="14" result="blur1" />
+      <feGaussianBlur stdDeviation="6" result="blur2" />
+      <feMerge>
+        <feMergeNode in="blur1"/>
+        <feMergeNode in="blur2"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Hex Gate Gradients -->
+    <linearGradient id="hex-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22d3ee"/>
+      <stop offset="50%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#818cf8"/>
+    </linearGradient>
+
+    <linearGradient id="chevron-left" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#67e8f9"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+
+    <linearGradient id="chevron-right" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c084fc"/>
+      <stop offset="100%" stop-color="#6366f1"/>
+    </linearGradient>
+
+    <linearGradient id="center-ridge" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="50%" stop-color="#7dd3fc"/>
+      <stop offset="100%" stop-color="#38bdf8"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Base Squircle with Beveled Glass Edge -->
+  <rect x="24" y="24" width="464" height="464" rx="108" fill="url(#bg-grad)"/>
+  <rect x="24" y="24" width="464" height="464" rx="108" stroke="url(#border-grad)" stroke-width="4"/>
+  <rect x="32" y="32" width="448" height="448" rx="100" stroke="#000000" stroke-opacity="0.5" stroke-width="2"/>
+
+  <!-- Outer Hexagonal Frame -->
+  <polygon points="256,92 376,162 376,302 256,372 136,302 136,162" 
+           stroke="#1e293b" stroke-width="14" fill="#0f172a" fill-opacity="0.4" stroke-linejoin="round"/>
+  
+  <!-- Outer Tech Ticks & Circuit Marks -->
+  <line x1="136" y1="210" x2="136" y2="254" stroke="#10b981" stroke-width="5" stroke-linecap="round"/>
+  <line x1="376" y1="210" x2="376" y2="254" stroke="#10b981" stroke-width="5" stroke-linecap="round"/>
+  <line x1="184" y1="134" x2="216" y2="116" stroke="#10b981" stroke-width="5" stroke-linecap="round"/>
+  <line x1="296" y1="116" x2="328" y2="134" stroke="#10b981" stroke-width="5" stroke-linecap="round"/>
+  <line x1="184" y1="330" x2="216" y2="348" stroke="#10b981" stroke-width="5" stroke-linecap="round"/>
+  <line x1="296" y1="348" x2="328" y2="330" stroke="#10b981" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- Neon Glowing Hex Aperture -->
+  <polygon points="256,118 354,175 354,289 256,346 158,289 158,175" 
+           stroke="url(#hex-grad)" stroke-width="10" fill="none" stroke-linejoin="round" filter="url(#glow-strong)"/>
+  <polygon points="256,118 354,175 354,289 256,346 158,289 158,175" 
+           stroke="#ffffff" stroke-width="3" stroke-opacity="0.8" fill="none" stroke-linejoin="round"/>
+
+  <!-- Launch Gate Inner Energy Conduit -->
+  <polygon points="256,142 334,187 334,277 256,322 178,277 178,187" 
+           stroke="#38bdf8" stroke-width="3" stroke-dasharray="16 10" fill="#030712" fill-opacity="0.6"/>
+
+  <!-- Supersonic Launch Chevron (Arrow / Shuttle Gate) -->
+  <g filter="url(#glow-cyan)">
+    <!-- Left Wing -->
+    <path d="M 256,182 L 202,274 L 236,258 L 256,320 Z" fill="url(#chevron-left)"/>
+    <!-- Right Wing -->
+    <path d="M 256,182 L 310,274 L 276,258 L 256,320 Z" fill="url(#chevron-right)"/>
+    <!-- Center Spine & Launch Core -->
+    <polygon points="256,174 260,256 256,324 252,256" fill="url(#center-ridge)"/>
+  </g>
+
+  <!-- Thrust Flare & Beam Base -->
+  <circle cx="256" cy="320" r="6" fill="#ffffff" filter="url(#glow-cyan)"/>
+  <ellipse cx="256" cy="324" rx="28" ry="6" fill="#38bdf8" fill-opacity="0.7" filter="url(#glow-strong)"/>
+</svg>

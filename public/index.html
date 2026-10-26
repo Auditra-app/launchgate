@@ -1,0 +1,1619 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LaunchGate — Production Readiness Command Center</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>/* Note: Using CDN Tailwind for dev; for production consider PostCSS/CLI */</script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+          },
+          fontSize: {
+            'xs': ['0.8125rem', { lineHeight: '1.25rem' }],
+            'sm': ['0.925rem', { lineHeight: '1.4rem' }],
+            'base': ['1.05rem', { lineHeight: '1.65rem' }],
+            'lg': ['1.175rem', { lineHeight: '1.75rem' }],
+            'xl': ['1.35rem', { lineHeight: '1.85rem' }],
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Premium typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css?v=20261026d">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/png" href="/favicon.png">
+</head>
+<body class="min-h-screen flex flex-col">
+
+<!-- ═══════════════════════════════════════════════
+     TOP NAV BAR
+═══════════════════════════════════════════════ -->
+<header class="lg-header sticky top-0 z-40">
+  <div class="lg-container lg-header-inner">
+
+    <!-- Brand -->
+    <div class="flex items-center gap-2.5 shrink-0 cursor-pointer" onclick="window.switchView ? window.switchView('overview') : null" title="LaunchGate Command Center">
+      <img src="/img/launchgate-icon.svg" alt="LaunchGate Brand Icon" class="w-7 h-7 rounded-lg shadow-sm hover:scale-105 transition-transform" />
+      <div class="flex flex-col">
+        <span class="text-sm font-bold lg-text-primary tracking-tight leading-none">LaunchGate</span>
+        <span class="text-[9px] font-mono text-cyan-400 font-semibold tracking-wide">COMMAND CENTER</span>
+      </div>
+    </div>
+
+    <!-- Folder Picker -->
+    <div class="flex items-center gap-1.5 flex-1 min-w-[240px] max-w-4xl">
+      <div class="relative flex-1 min-w-0">
+        <svg class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 lg-text-muted pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+        </svg>
+        <input
+          type="text"
+          id="project-path-input"
+          placeholder="Select a project folder…"
+          title="Current project folder path"
+          class="lg-input w-full pl-8 pr-3 py-1.5 text-xs font-mono"
+        >
+      </div>
+      <button id="btn-load-path" class="lg-btn-ghost text-xs px-2.5 py-1.5 shrink-0" title="Load path entered in input">Load</button>
+      <button id="btn-pick-folder" class="lg-btn-primary text-xs px-2.5 py-1.5 shrink-0" title="Browse local folders">Browse</button>
+      <button id="btn-load-demo" class="lg-btn-ghost text-xs px-2.5 py-1.5 flex items-center gap-1.5 shrink-0" style="color:#38bdf8; border-color: rgba(56, 189, 248, 0.35); background: rgba(56, 189, 248, 0.06);" title="Load pre-bundled AI Vibe-SaaS Demo Project">
+        <svg class="w-3.5 h-3.5 flex-shrink-0 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+        </svg>
+        <span class="font-medium tracking-tight">Try Demo</span>
+      </button>
+      <button id="btn-reset-tool" class="lg-btn-ghost text-xs px-2.5 py-1.5 flex items-center gap-1.5 shrink-0 text-slate-300 hover:text-rose-300 hover:bg-rose-500/15 hover:border-rose-500/40 border border-slate-700/60 transition-colors" title="Reset tool: unload active project and clear all statistics to 0%">
+        <svg class="w-3.5 h-3.5 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        <span class="font-medium tracking-tight">Reset</span>
+      </button>
+    </div>
+
+    <!-- Right Controls -->
+    <div class="flex items-center gap-2 shrink-0">
+
+      <!-- How to Use Guide -->
+      <button id="btn-how-to-use" class="lg-btn-ghost text-xs px-2.5 py-1.5 flex items-center gap-1.5 shrink-0" title="How to use LaunchGate preflight command center" style="color:#a5b4fc; border-color: rgba(99,102,241,0.22);">
+        <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:#818cf8">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span class="font-medium tracking-tight hidden 2xl:inline">How to Use</span>
+      </button>
+
+      <!-- 12 Gates Encyclopedia / Docs -->
+      <button id="btn-gates-docs" class="lg-btn-ghost text-xs px-2.5 py-1.5 flex items-center gap-1.5 shrink-0" title="Browse full documentation and audit criteria for all 12 Gates">
+        <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:#67e8f9">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+        </svg>
+        <span class="font-medium tracking-tight hidden 2xl:inline">12 Gates Docs</span>
+      </button>
+
+      <!-- Beta Feedback & Diagnostics -->
+      <button id="btn-feedback" class="lg-btn-ghost text-xs px-2.5 py-1.5 flex items-center gap-1.5 shrink-0" title="Report issue or export diagnostics for beta feedback" style="color:#fbbf24; border-color: rgba(251, 191, 36, 0.28);">
+        <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:#f59e0b">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
+        </svg>
+        <span class="font-medium tracking-tight hidden 2xl:inline">Feedback</span>
+      </button>
+
+      <div class="lg-divider-v"></div>
+
+      <!-- Magic Vibe-to-SaaS Transmuter -->
+      <button id="btn-magic-vibe-saas" class="magic-btn text-xs px-2.5 py-1.5 flex items-center gap-1.5 font-semibold text-white rounded shadow-sm shrink-0" title="Transform vibe-coded apps into turnkey production SaaS">
+        <svg class="w-3.5 h-3.5 text-amber-300 animate-pulse flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+        </svg>
+        <span class="magic-text hidden 2xl:inline">✨ Magic SaaS</span>
+      </button>
+
+      <!-- Run All / Selected -->
+      <button id="btn-run-all-gates" class="lg-btn-primary text-xs px-3 py-1.5 flex items-center gap-1.5 font-medium shrink-0">
+        <svg class="w-3.5 h-3.5 hidden" id="batch-spinner" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+        </svg>
+        <svg class="w-3.5 h-3.5 flex-shrink-0" id="batch-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+        </svg>
+        <span id="batch-btn-text">Run All Gates</span>
+      </button>
+
+      <!-- Certificate (Phase 4) -->
+      <button id="btn-open-certificate" class="lg-btn-success text-xs px-2.5 py-1.5 flex items-center gap-1.5 font-medium shrink-0" title="Certificate of Readiness">
+        <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span class="hidden 2xl:inline">Certificate</span>
+      </button>
+
+      <div class="lg-divider-v"></div>
+
+      <!-- More Tools Dropdown -->
+      <div class="relative">
+        <button id="btn-more-tools-toggle" class="lg-btn-ghost text-xs px-2.5 py-1.5 flex items-center gap-1 text-slate-300 hover:text-white" title="Additional developer tools & controls">
+          <span>Tools</span>
+          <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div id="more-tools-dropdown" class="hidden lg-dropdown absolute right-0 mt-1 w-64 z-50">
+          <div class="lg-dropdown-header">Agent Rules Exporter</div>
+          <div class="lg-dropdown-item flex items-center justify-between text-xs cursor-pointer export-agent-opt" data-agent="cursor">
+            <span class="font-medium lg-text-primary">Cursor IDE</span>
+            <span class="text-[10px] font-mono lg-text-subtle">.cursor/rules</span>
+          </div>
+          <div class="lg-dropdown-item flex items-center justify-between text-xs cursor-pointer export-agent-opt" data-agent="claude">
+            <span class="font-medium lg-text-primary">Claude Code</span>
+            <span class="text-[10px] font-mono lg-text-subtle">CLAUDE.md</span>
+          </div>
+          <div class="lg-dropdown-item flex items-center justify-between text-xs cursor-pointer export-agent-opt" data-agent="windsurf">
+            <span class="font-medium lg-text-primary">Windsurf</span>
+            <span class="text-[10px] font-mono lg-text-subtle">.windsurfrules</span>
+          </div>
+          <div class="lg-dropdown-item flex items-center justify-between text-xs cursor-pointer export-agent-opt" data-agent="copilot">
+            <span class="font-medium lg-text-primary">GitHub Copilot</span>
+            <span class="text-[10px] font-mono lg-text-subtle">.github/copilot</span>
+          </div>
+
+          <div class="border-t border-slate-700/50 my-1"></div>
+          <div class="lg-dropdown-header">Repository Utilities</div>
+          <div id="menu-opt-git-hook" class="lg-dropdown-item flex items-center gap-2 text-xs cursor-pointer text-amber-300 hover:bg-slate-800">
+            <span>🛡️</span>
+            <span>Install Git Pre-Push Hook</span>
+          </div>
+          <div id="menu-opt-history" class="lg-dropdown-item flex items-center gap-2 text-xs cursor-pointer text-cyan-300 hover:bg-slate-800">
+            <span>📈</span>
+            <span>Readiness Score History</span>
+          </div>
+          <div id="menu-opt-reset-tool" class="lg-dropdown-item flex items-center gap-2 text-xs cursor-pointer text-rose-400 hover:bg-slate-800">
+            <span>🗑️</span>
+            <span>Reset Tool & Clear Project</span>
+          </div>
+
+          <div class="border-t border-slate-700/50 my-1"></div>
+          <div class="lg-dropdown-header">Server Controls</div>
+          <div id="menu-opt-restart" class="lg-dropdown-item flex items-center gap-2 text-xs cursor-pointer text-amber-400 hover:bg-slate-800">
+            <span>🔄</span>
+            <span>Restart LaunchGate Server</span>
+          </div>
+          <div id="menu-opt-shutdown" class="lg-dropdown-item flex items-center gap-2 text-xs cursor-pointer text-red-400 hover:bg-slate-800">
+            <span>🛑</span>
+            <span>Shutdown Server</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Projects -->
+      <div class="relative">
+        <button id="btn-recent-toggle" class="lg-btn-icon" title="Recent projects">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </button>
+        <div id="recent-dropdown" class="hidden lg-dropdown absolute right-0 mt-1 w-72 z-50">
+          <div class="lg-dropdown-header">Recent Projects</div>
+          <div id="recent-list" class="max-h-52 overflow-y-auto"></div>
+        </div>
+      </div>
+
+      <!-- Theme Toggle -->
+      <button id="btn-theme-toggle" class="lg-btn-icon" title="Toggle theme">
+        <span id="theme-icon">☀️</span>
+      </button>
+
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════════
+     PROJECT CONTEXT BAR
+═══════════════════════════════════════════════ -->
+<div class="lg-context-bar">
+  <div class="lg-container lg-context-inner">
+
+    <!-- ── Left: Project capsule + Stack ── -->
+    <div class="ctx-left">
+
+      <!-- Project Identity Capsule -->
+      <div class="ctx-capsule">
+        <div class="ctx-folder-icon">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+          </svg>
+        </div>
+        <div class="ctx-project-info">
+          <div class="ctx-project-row">
+            <span id="active-project-name" class="ctx-project-name" title="Active Project">None loaded</span>
+            <button id="btn-context-clear-project" class="ctx-clear-btn hidden" title="Unload project">
+              <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <span id="active-project-path" class="ctx-project-path" title="Project path">Select a folder to begin</span>
+        </div>
+      </div>
+
+      <!-- Hairline separator -->
+      <div class="ctx-sep"></div>
+
+      <!-- Stack tech badges -->
+      <div id="stack-badges-container" class="ctx-badges no-scrollbar"></div>
+    </div>
+
+    <!-- ── Right: Severity pills + gauge ── -->
+    <div class="ctx-right">
+      <!-- Severity counts -->
+      <div class="ctx-counts">
+        <span id="count-p0" class="lg-count-p0">0 P0</span>
+        <span id="count-p1" class="lg-count-p1">0 P1</span>
+        <span id="count-p2" class="lg-count-p2">0 P2</span>
+        <span id="count-passed" class="lg-count-pass">0 Passed</span>
+      </div>
+
+      <!-- Divider -->
+      <div class="ctx-sep"></div>
+
+      <!-- Readiness mini-gauge -->
+      <div class="ctx-gauge-wrap">
+        <div class="ctx-gauge-labels">
+          <div class="ctx-gauge-label-top">Readiness</div>
+          <div id="overall-verdict-pill" class="ctx-gauge-verdict">Unscanned</div>
+        </div>
+        <div class="ctx-gauge-ring">
+          <svg class="w-10 h-10 -rotate-90 gauge-svg" viewBox="0 0 44 44">
+            <circle cx="22" cy="22" r="17" stroke-width="3.5" class="gauge-bg" fill="none"/>
+            <circle id="score-gauge-bar" cx="22" cy="22" r="17"
+              stroke="currentColor" stroke-width="3.5"
+              stroke-dasharray="106.81" stroke-dashoffset="106.81"
+              stroke-linecap="round" class="text-indigo-500" fill="none"/>
+          </svg>
+          <span id="overall-score-text" class="ctx-gauge-score">0%</span>
+        </div>
+        <span id="verified-gate-count" class="ctx-gate-count hidden">0/12</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     VIEW NAVIGATION
+═══════════════════════════════════════════════ -->
+<div class="lg-viewnav">
+  <div class="lg-container lg-viewnav-inner">
+    <div class="lg-segmented" role="tablist" aria-label="Views">
+      <button id="nav-btn-overview" class="lg-seg-btn is-active" role="tab" aria-selected="true">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M4 13h6V4H4v9zm10 7h6v-9h-6v9zM4 20h6v-4H4v4zm10-11h6V4h-6v5z"/>
+        </svg>
+        Overview
+      </button>
+      <button id="nav-btn-workspace" class="lg-seg-btn" role="tab" aria-selected="false">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+        </svg>
+        Gate Workspace
+      </button>
+    </div>
+    <div class="lg-viewnav-meta">
+      <span class="lg-live-dot"></span>
+      <span>Local-only engine</span>
+      <span class="lg-viewnav-sep"></span>
+      <span class="font-mono">MCP v1.1.0</span>
+      <span class="lg-viewnav-sep"></span>
+      <span id="nav-gate-summary">12 gates idle</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     AUDIT HISTORY RESTORE BANNER (POLISHED)
+═══════════════════════════════════════════════ -->
+<div id="history-restore-banner" class="hidden w-full bg-gradient-to-r from-slate-900 via-indigo-950/70 to-slate-900 border-b border-indigo-500/30 px-4 py-2 text-xs shadow-inner backdrop-blur-md transition-all duration-300">
+  <div class="lg-container flex items-center justify-between gap-4 flex-wrap sm:flex-nowrap">
+    <div class="flex items-center gap-3 text-slate-200 min-w-0">
+      <div class="w-7 h-7 rounded-lg bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0 shadow-sm">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <div id="history-restore-text" class="text-xs text-slate-200">
+        Found saved audit history for this project.
+      </div>
+    </div>
+    <div class="flex items-center gap-2 shrink-0">
+      <button id="btn-restore-history" class="lg-btn lg-btn-primary text-xs px-3 py-1.5 flex items-center gap-1.5 font-semibold shadow-md shadow-indigo-500/20 cursor-pointer">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        Load Stored Audit
+      </button>
+      <button id="btn-dismiss-history" class="text-xs px-3 py-1.5 font-medium text-slate-200 hover:text-white bg-slate-800/90 hover:bg-slate-700/90 border border-slate-600/80 hover:border-slate-400 rounded-md shadow-xs hover:shadow-md transition-all duration-150 cursor-pointer flex items-center gap-1.5 active:scale-95" title="Dismiss saved history and start fresh with 0%">
+        <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+        <span>Keep Reset (0%)</span>
+      </button>
+      <button id="btn-close-history" title="Dismiss notice" class="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors ml-1">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     LIVE SCAN STREAM PROGRESS STRIP
+═══════════════════════════════════════════════ -->
+<div id="live-scan-progress-strip" class="hidden w-full bg-slate-900 border-b border-indigo-500/30 px-4 py-2.5 text-xs shadow-md">
+  <div class="lg-container flex items-center justify-between gap-4">
+    <div class="flex items-center gap-3 min-w-0">
+      <div class="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin shrink-0"></div>
+      <div class="min-w-0">
+        <span id="scan-progress-title" class="font-medium text-indigo-300 block truncate">Initializing LaunchGate engine...</span>
+        <span id="scan-progress-details" class="text-[10px] font-mono text-slate-400 block truncate"></span>
+      </div>
+    </div>
+    <div class="flex items-center gap-3 shrink-0">
+      <div class="w-40 sm:w-56 bg-slate-800 rounded-full h-2 overflow-hidden border border-slate-700/60">
+        <div id="scan-progress-bar" class="bg-indigo-500 h-full transition-all duration-150" style="width: 0%"></div>
+      </div>
+      <span id="scan-progress-percent" class="text-xs font-mono font-bold text-indigo-400 min-w-[32px] text-right">0%</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     VIEW: OVERVIEW / COMMAND CENTER
+═══════════════════════════════════════════════ -->
+<main id="view-overview" class="lg-container flex-1 py-6 min-h-0">
+  <div class="ov-page">
+
+    <!-- Hero readiness -->
+    <section class="ov-hero">
+      <div class="ov-hero-grid">
+        <div class="ov-ring-wrap">
+          <svg viewBox="0 0 120 120" class="ov-ring" aria-hidden="true">
+            <circle cx="60" cy="60" r="52" class="ov-ring-bg"></circle>
+            <circle id="overview-ring-bar" cx="60" cy="60" r="52" class="ov-ring-bar"
+              stroke-dasharray="326.73" stroke-dashoffset="326.73"></circle>
+          </svg>
+          <div class="ov-ring-center">
+            <span id="overview-hero-score">0%</span>
+            <small>readiness</small>
+          </div>
+        </div>
+
+        <div class="ov-hero-copy">
+          <div class="ov-eyebrow">Production readiness command center</div>
+          <h1 id="overview-project-name">No project selected</h1>
+          <p id="overview-project-path" class="ov-path">Choose a folder or clone a repo to begin the 12-gate audit.</p>
+          <div id="overview-verdict" class="ov-verdict ov-verdict-idle">Ready to scan</div>
+          <div class="ov-hero-actions">
+            <button id="overview-btn-scan" class="lg-btn-primary text-xs px-4 py-2 flex items-center gap-1.5 font-medium">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              Run full audit
+            </button>
+            <button id="overview-btn-workspace" class="lg-btn-ghost text-xs px-4 py-2">Open gate workspace</button>
+            <button id="overview-btn-cert" class="lg-btn-success text-xs px-4 py-2">View certificate</button>
+          </div>
+        </div>
+
+        <div class="ov-hero-side">
+          <div class="ov-side-row">
+            <span>Last scan</span>
+            <strong id="overview-last-scan">Never</strong>
+          </div>
+          <div class="ov-side-row">
+            <span>Gates scanned</span>
+            <strong id="overview-gates-scanned">0 / 12</strong>
+          </div>
+          <div class="ov-side-row">
+            <span>Verified</span>
+            <strong id="overview-verified-count">0 / 12</strong>
+          </div>
+          <div class="ov-side-row ov-side-row-stack">
+            <span>Stack</span>
+            <div id="overview-stack" class="ov-stack-badges">Not detected</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- KPI tiles -->
+    <section class="ov-kpis">
+      <div class="ov-kpi ov-kpi-p0">
+        <span class="ov-kpi-label">P0 Blockers</span>
+        <span class="ov-kpi-value" id="kpi-p0">0</span>
+        <span class="ov-kpi-foot">Must be zero before launch</span>
+      </div>
+      <div class="ov-kpi ov-kpi-p1">
+        <span class="ov-kpi-label">P1 High Risk</span>
+        <span class="ov-kpi-value" id="kpi-p1">0</span>
+        <span class="ov-kpi-foot">Fix before scaling traffic</span>
+      </div>
+      <div class="ov-kpi ov-kpi-pass">
+        <span class="ov-kpi-label">Checks Passed</span>
+        <span class="ov-kpi-value" id="kpi-passed">0</span>
+        <span class="ov-kpi-foot">Verified production controls</span>
+      </div>
+      <div class="ov-kpi ov-kpi-scanned">
+        <span class="ov-kpi-label">Gate Coverage</span>
+        <span class="ov-kpi-value" id="kpi-scanned">0<span class="ov-kpi-unit">/12</span></span>
+        <span class="ov-kpi-foot">Run all gates for full coverage</span>
+      </div>
+    </section>
+
+    <!-- Gate grid + side column -->
+    <div class="ov-columns">
+      <section class="lg-card ov-panel">
+        <div class="ov-panel-head">
+          <div>
+            <h2 class="ov-panel-title">12-Gate Health</h2>
+            <p class="ov-panel-sub">Click any gate to inspect findings and remediation steps.</p>
+          </div>
+          <button id="overview-open-workspace" class="lg-btn-ghost text-xs px-3 py-1.5">Open workspace →</button>
+        </div>
+        <div id="overview-gate-grid" class="ov-gate-grid"></div>
+      </section>
+
+      <aside class="ov-side-col">
+        <section class="lg-card ov-panel">
+          <div class="ov-panel-head">
+            <h2 class="ov-panel-title">Quick Actions</h2>
+          </div>
+          <div class="ov-actions">
+            <button id="overview-act-magic" class="ov-action">
+              <span class="ov-action-icon ov-icon-amber">✨</span>
+              <span class="ov-action-copy"><strong>Magic harden</strong><small>Inject production infrastructure</small></span>
+            </button>
+            <button id="overview-act-hook" class="ov-action">
+              <span class="ov-action-icon ov-icon-emerald">🛡️</span>
+              <span class="ov-action-copy"><strong>Git pre-push guard</strong><small>Block commits with P0 blockers</small></span>
+            </button>
+            <button id="overview-act-sarif" class="ov-action">
+              <span class="ov-action-icon ov-icon-cyan">📄</span>
+              <span class="ov-action-copy"><strong>Export SARIF</strong><small>GitHub code scanning format</small></span>
+            </button>
+            <button id="overview-act-history" class="ov-action">
+              <span class="ov-action-icon ov-icon-indigo">📈</span>
+              <span class="ov-action-copy"><strong>Readiness history</strong><small>Track score deltas over time</small></span>
+            </button>
+          </div>
+        </section>
+
+        <section class="lg-card ov-panel">
+          <div class="ov-panel-head">
+            <h2 class="ov-panel-title">MCP Server</h2>
+            <span class="ov-badge-live">READY</span>
+          </div>
+          <p class="ov-panel-sub mb-2">Drive LaunchGate from Cursor, Claude Code, Windsurf or any MCP agent.</p>
+          <div id="overview-mcp-status" class="ov-mcp-status">
+            <div class="ov-mcp-row"><span>Transport</span><code>stdio / JSON-RPC 2.0</code></div>
+            <div class="ov-mcp-row"><span>Tools</span><code>19</code></div>
+            <div class="ov-mcp-row"><span>Resources</span><code>gates • summary • report • sarif</code></div>
+            <div class="ov-mcp-row"><span>Prompts</span><code>fix_gate • release_audit</code></div>
+          </div>
+          <button id="overview-copy-mcp" class="lg-btn-ghost text-xs px-3 py-1.5 mt-3 w-full">Copy MCP config</button>
+        </section>
+
+        <section class="lg-card ov-panel">
+          <div class="ov-panel-head">
+            <h2 class="ov-panel-title">Recent Projects</h2>
+          </div>
+          <div id="overview-recent-list" class="ov-recent-list">
+            <div class="ov-empty">No recent projects yet.</div>
+          </div>
+        </section>
+      </aside>
+    </div>
+  </div>
+</main>
+
+<!-- ═══════════════════════════════════════════════
+     VIEW: GATE WORKSPACE
+═══════════════════════════════════════════════ -->
+<main id="view-workspace" class="lg-container flex-1 flex gap-5 py-5 min-h-0 hidden">
+
+  <!-- ─── Left Sidebar ─── -->
+  <aside class="w-[360px] shrink-0 flex flex-col gap-1">
+    <div class="flex items-center justify-between mb-2 px-1">
+      <div class="flex items-center gap-2">
+        <input type="checkbox" id="gate-select-all" class="lg-checkbox" title="Select / deselect all gates" checked>
+        <label for="gate-select-all" class="text-[10px] uppercase tracking-widest font-semibold lg-text-subtle cursor-pointer select-none">Gates</label>
+        <span id="selected-gate-count" class="text-[10px] font-mono lg-text-subtle">(12/12)</span>
+      </div>
+      <span id="verified-gate-count-sidebar" class="text-[10px] font-mono text-emerald-500">0 / 12</span>
+    </div>
+    <nav id="gates-nav-list" class="flex flex-col gap-0.5 overflow-y-auto" style="max-height: calc(100vh - 200px);">
+      <!-- rendered by JS -->
+    </nav>
+  </aside>
+
+  <!-- ─── Right Panel ─── -->
+  <section class="flex-1 flex flex-col gap-4 min-w-0 overflow-hidden">
+
+    <!-- Gate Header Card -->
+    <div class="lg-card p-5">
+      <!-- Top Row: Meta + Actions -->
+      <div class="flex items-start justify-between gap-4 mb-4">
+        <div class="min-w-0">
+          <div class="flex items-center gap-2 mb-1">
+            <span id="active-gate-number-badge" class="gate-pill">GATE 1</span>
+            <span id="active-gate-category" class="text-[10px] uppercase tracking-wider lg-text-subtle font-medium">Security</span>
+            <span id="active-gate-status-badge" class="text-[10px] font-semibold px-2 py-0.5 rounded-full lg-status-unknown">Unscanned</span>
+          </div>
+          <h1 id="active-gate-title" class="text-base font-semibold lg-text-primary leading-snug">Secrets, Credentials &amp; Environment Hygiene</h1>
+          <p id="active-gate-desc" class="text-xs lg-text-muted mt-1 leading-relaxed max-w-xl">Audits .gitignore rules, scans tracked files for hardcoded secrets, detects public client prefix leakage, and verifies runtime environment validation.</p>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
+          <button id="btn-scan-current-gate" class="lg-btn-primary text-xs px-3 py-1.5 flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            Scan
+          </button>
+          <button id="btn-copy-audit-prompt" class="lg-btn-ghost text-xs px-3 py-1.5 flex items-center gap-1.5" title="Copy Antigravity audit prompt">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+            </svg>
+            Copy Prompt
+          </button>
+          <button id="btn-toggle-ingest" class="lg-btn-ghost text-xs px-3 py-1.5 flex items-center gap-1.5" title="Ingest Antigravity findings">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
+            </svg>
+            Ingest
+          </button>
+          <button id="btn-generate-fix" class="lg-btn-ghost text-xs px-3 py-1.5 flex items-center gap-1.5" title="Generate & copy auto-fix command">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+            Auto-Fix
+          </button>
+        </div>
+      </div>
+
+      <!-- Divider -->
+      <div class="lg-divider mb-4"></div>
+
+      <!-- Sign-Off & Verification Bar -->
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <label class="flex items-center gap-2.5 cursor-pointer" id="verified-toggle-label">
+            <input type="checkbox" id="gate-verified-toggle" class="sr-only">
+            <div class="lg-toggle" id="toggle-track">
+              <div class="toggle-knob"></div>
+            </div>
+            <span class="text-xs font-medium lg-text-muted" id="toggle-label-text">Mark as Verified</span>
+          </label>
+          <span id="gate-verified-date" class="text-[11px] font-mono lg-text-subtle"></span>
+        </div>
+        <div id="gate-report-file-pill" class="text-[11px] font-mono text-indigo-400"></div>
+      </div>
+
+      <!-- Inspection Evidence & Telemetry Strip -->
+      <div id="gate-telemetry-box" class="mt-3 pt-2.5 border-t lg-border flex flex-wrap items-center justify-between text-[11px] lg-text-subtle gap-2">
+        <div class="flex items-center gap-2.5 flex-wrap">
+          <span class="flex items-center gap-1 font-mono text-slate-300">
+            <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <span id="telemetry-files-count">0 files scanned</span>
+          </span>
+          <span>•</span>
+          <span class="flex items-center gap-1 font-mono text-slate-300">
+            <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span id="telemetry-duration">--</span>
+          </span>
+          <span>•</span>
+          <span class="flex items-center gap-1 font-mono text-slate-300">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span>
+            <span id="telemetry-timestamp">Ready for inspection</span>
+          </span>
+        </div>
+        <button id="btn-toggle-scanned-files" class="text-indigo-400 hover:text-indigo-300 font-mono text-[10px] hidden underline">
+          View scanned files (<span id="telemetry-sample-count">0</span>)
+        </button>
+      </div>
+      <div id="scanned-files-drawer" class="hidden mt-2 p-2.5 bg-slate-900/90 rounded border border-slate-800 text-[10px] font-mono text-slate-400 max-h-36 overflow-y-auto">
+        <div class="text-[9px] uppercase tracking-wider text-slate-500 font-bold mb-1">Files Crawled &amp; Inspected for this Gate:</div>
+        <ul id="scanned-files-list" class="space-y-0.5 list-disc list-inside"></ul>
+      </div>
+
+      <!-- Notes Row -->
+      <div class="flex items-center gap-2 mt-3 pt-3 border-t lg-border">
+        <input type="text" id="gate-notes-input" placeholder="Sign-off notes (optional)…" class="lg-input flex-1 text-xs px-3 py-1.5">
+        <button id="btn-save-notes" class="lg-btn-ghost text-xs px-3 py-1.5 shrink-0">Save Notes</button>
+      </div>
+
+      <!-- Ingest Collapsible -->
+      <div id="ingest-box" class="hidden mt-4">
+        <div class="lg-divider mb-4"></div>
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-medium lg-text-muted">Ingest Antigravity Findings</span>
+          <span class="text-[10px] lg-text-subtle">Paste analysis to incorporate into fix plan</span>
+        </div>
+        <textarea id="ingest-textarea" rows="3"
+          placeholder="Paste Antigravity architectural findings or proposed patches here…"
+          class="lg-input w-full text-xs font-mono px-3 py-2 resize-none"></textarea>
+        <div class="flex justify-end mt-2">
+          <button id="btn-save-ingest" class="lg-btn-primary text-xs px-3 py-1.5">Save to Fix Plan</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="flex items-center gap-1" id="severity-tabs">
+      <button data-filter="all"    class="tab-btn active lg-tab">All <span class="lg-tab-count" id="tab-count-all">0</span></button>
+      <button data-filter="P0"    class="tab-btn lg-tab">Critical <span class="lg-tab-count" id="tab-count-p0">0</span></button>
+      <button data-filter="P1"    class="tab-btn lg-tab">High Risk <span class="lg-tab-count" id="tab-count-p1">0</span></button>
+      <button data-filter="P2"    class="tab-btn lg-tab">Hygiene <span class="lg-tab-count" id="tab-count-p2">0</span></button>
+      <button data-filter="PASSED" class="tab-btn lg-tab">Passed <span class="lg-tab-count" id="tab-count-passed">0</span></button>
+    </div>
+
+    <!-- Findings List -->
+    <div id="findings-container" class="flex flex-col gap-2.5 pb-6"></div>
+
+    <!-- Gate 12 CLI Panel -->
+    <div id="gate12-cli-section" class="hidden flex flex-col gap-3">
+      <div class="lg-card p-4">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h3 class="text-sm font-semibold lg-text-primary">Live Terminal Runner</h3>
+            <p class="text-xs lg-text-muted mt-0.5">Stream verification checks directly to console</p>
+          </div>
+          <button id="btn-clear-terminal" class="lg-btn-ghost text-xs px-2.5 py-1">Clear</button>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+          <button id="btn-run-typecheck" class="lg-btn-ghost text-xs py-2 flex items-center justify-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+            Typecheck
+          </button>
+          <button id="btn-run-lint" class="lg-btn-ghost text-xs py-2 flex items-center justify-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Lint
+          </button>
+          <button id="btn-run-audit" class="lg-btn-ghost text-xs py-2 flex items-center justify-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+            npm audit
+          </button>
+          <button id="btn-run-build" class="lg-btn-primary text-xs py-2 flex items-center justify-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10"/></svg>
+            Build
+          </button>
+        </div>
+        <div class="lg-terminal rounded-lg px-4 py-3 h-64 overflow-y-auto text-xs text-slate-300" id="terminal-output">
+          <span class="lg-text-subtle italic">Terminal ready. Click a check above to begin…</span>
+        </div>
+      </div>
+    </div>
+
+  </section>
+</main>
+
+<!-- ═══════════════════════════════════════════════
+     PROJECT SELECTOR MODAL (Local Folder / Git Repo)
+═══════════════════════════════════════════════ -->
+<div id="project-picker-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+  <div class="lg-modal flex flex-col w-full max-w-2xl">
+    <div class="flex items-center justify-between px-5 py-4 border-b lg-border">
+      <div class="flex items-center gap-2.5">
+        <div class="w-7 h-7 rounded-lg bg-indigo-500/15 text-indigo-400 flex items-center justify-center text-sm font-bold">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="text-sm font-semibold lg-text-primary">Open Project to Audit</h2>
+          <p class="text-xs lg-text-muted">Browse your computer's folders, pick via browser, or clone a remote Git repository</p>
+        </div>
+      </div>
+      <button id="btn-close-picker-modal" class="lg-btn-icon">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Modal Tabs -->
+    <div class="flex border-b lg-border px-5 gap-2 pt-2">
+      <button id="tab-picker-local" class="lg-tab active py-2 text-xs">Directory Browser</button>
+      <button id="tab-picker-git" class="lg-tab py-2 text-xs">Clone Git Repo</button>
+    </div>
+
+    <!-- Tab Content: Local Directory -->
+    <div id="picker-local-content" class="p-5 flex flex-col gap-3.5">
+      <!-- Path Input & Action -->
+      <div>
+        <label class="block text-xs font-medium lg-text-primary mb-1">Target Directory Path</label>
+        <div class="flex gap-2">
+          <input type="text" id="modal-folder-input" placeholder="e.g. F:\App Checker Tool or C:\Projects\my-app" class="lg-input flex-1 px-3 py-2 text-xs font-mono">
+          <button id="btn-modal-load-folder" class="lg-btn-primary text-xs px-4 py-2 shrink-0">Open &amp; Audit</button>
+        </div>
+      </div>
+
+      <!-- Quick Drives & Locations -->
+      <div>
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="text-[11px] font-medium lg-text-subtle uppercase tracking-wider">Quick Locations &amp; Drives</span>
+          <button id="btn-modal-select-current" class="text-xs text-indigo-400 hover:underline font-medium">✓ Select Current Folder</button>
+        </div>
+        <div id="picker-quick-locations" class="flex flex-wrap gap-1.5">
+          <!-- Dynamic Drive & Location buttons -->
+        </div>
+      </div>
+
+      <!-- In-App Interactive Folder Explorer -->
+      <div class="folder-explorer-container flex flex-col">
+        <!-- Explorer Header / Breadcrumbs & Filter -->
+        <div class="flex items-center justify-between px-3 py-2 border-b lg-border bg-slate-900/40 gap-2">
+          <div class="flex items-center gap-1.5 min-w-0 flex-1">
+            <button id="btn-picker-up" class="lg-btn-ghost text-xs px-2 py-1 shrink-0" title="Go up to parent directory">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
+              </svg>
+            </button>
+            <div id="picker-breadcrumbs" class="text-xs font-mono lg-text-primary truncate flex items-center gap-1">
+              <!-- Breadcrumbs injected here -->
+            </div>
+          </div>
+          <input type="text" id="picker-folder-filter" placeholder="Filter folders..." class="lg-input text-xs px-2.5 py-1 w-36">
+        </div>
+
+        <!-- Explorer Folder List -->
+        <div id="picker-folder-list" class="folder-explorer-list">
+          <!-- Subdirectories injected here -->
+        </div>
+      </div>
+
+      <!-- Bottom helper -->
+      <div class="pt-2 border-t lg-border flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <button id="btn-modal-native-dialog" class="lg-btn-ghost text-xs px-3 py-1.5 flex items-center gap-1.5" title="Open native Windows Explorer folder picker">
+            <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+            </svg>
+            Windows Explorer Dialog
+          </button>
+        </div>
+        <span class="text-[11px] lg-text-subtle">🔒 100% Local — No files leave your machine</span>
+      </div>
+    </div>
+
+    <!-- Tab Content: Git Repo -->
+    <div id="picker-git-content" class="hidden p-5 flex flex-col gap-3">
+      <div>
+        <label class="block text-xs font-medium lg-text-primary mb-1">Git Repository URL (GitHub, GitLab, Bitbucket)</label>
+        <input type="text" id="modal-git-url-input" placeholder="https://github.com/username/repository.git" class="lg-input w-full px-3 py-2 text-xs font-mono">
+      </div>
+      <div>
+        <label class="block text-xs font-medium lg-text-primary mb-1">Personal Access Token (Required for Private Repos)</label>
+        <div class="flex gap-2">
+          <input type="password" id="modal-git-token-input" placeholder="ghp_... or Git Access Token (optional for public repos)" class="lg-input flex-1 px-3 py-2 text-xs font-mono">
+          <button id="btn-modal-clone-git" class="lg-btn-primary text-xs px-4 py-2 flex items-center gap-1.5 shrink-0">
+            <svg class="w-3.5 h-3.5 hidden" id="git-clone-spinner" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+            </svg>
+            <span id="git-clone-btn-text">Clone &amp; Audit</span>
+          </button>
+        </div>
+        <p class="text-[11px] lg-text-subtle mt-1.5">For private repos, paste your GitHub PAT to authorize. Shallow clone (<code class="font-mono">--depth 1</code>) saves to <code class="font-mono">data/clones/</code>.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     CERTIFICATE MODAL
+═══════════════════════════════════════════════ -->
+<div id="certificate-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+  <div class="lg-modal flex flex-col w-full max-w-3xl max-h-[85vh]">
+    <div class="flex items-center justify-between px-5 py-4 border-b lg-border">
+      <div class="flex items-center gap-3">
+        <div class="w-7 h-7 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center text-sm font-bold">✓</div>
+        <div>
+          <h2 class="text-sm font-semibold lg-text-primary">Production Readiness Certificate</h2>
+          <p class="text-xs lg-text-muted">Saved as <code class="text-emerald-400 font-mono">PRODUCTION_READINESS_REPORT.md</code></p>
+        </div>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <button id="btn-export-sarif" class="lg-btn-secondary text-xs px-3 py-1.5 flex items-center gap-1.5" title="Download OASIS SARIF v2.1.0 report for GitHub Code Scanning">
+          <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+          </svg>
+          SARIF
+        </button>
+        <button id="btn-print-certificate-pdf" class="lg-btn-primary text-xs px-3 py-1.5 flex items-center gap-1.5" title="Open printable release certificate in new tab">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+          </svg>
+          Print / PDF
+        </button>
+        <button id="btn-copy-certificate" class="lg-btn-ghost text-xs px-3 py-1.5">Copy</button>
+        <button id="btn-close-certificate" class="lg-btn-icon">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div class="p-5 overflow-y-auto flex-1 font-mono text-xs lg-text-muted whitespace-pre-wrap leading-relaxed" id="certificate-content"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     HISTORY MODAL (Phase 3)
+═══════════════════════════════════════════════ -->
+<div id="history-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+  <div class="lg-modal flex flex-col w-full max-w-2xl max-h-[80vh]">
+    <div class="flex items-center justify-between px-5 py-4 border-b lg-border">
+      <div class="flex items-center gap-3">
+        <div class="w-7 h-7 rounded-lg bg-indigo-500/15 text-indigo-400 flex items-center justify-center text-sm font-bold">📈</div>
+        <div>
+          <h2 class="text-sm font-semibold lg-text-primary">Readiness &amp; Score History</h2>
+          <p class="text-xs lg-text-muted">Track score delta across audit runs</p>
+        </div>
+      </div>
+      <button id="btn-close-history" class="lg-btn-icon">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div id="history-modal-content" class="p-5 overflow-y-auto flex-1 flex flex-col gap-2.5">
+      <!-- Dynamic history snapshots -->
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     ✨ MAGIC VIBE-TO-SAAS TRANSMUTATION MODAL
+═══════════════════════════════════════════════ -->
+<div id="magic-modal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4">
+  <div class="lg-modal flex flex-col w-full max-w-3xl max-h-[90vh] border border-indigo-500/30 shadow-2xl bg-gradient-to-b from-gray-900 to-gray-950">
+    
+    <!-- Modal Header -->
+    <div class="flex items-center justify-between px-6 py-4 border-b border-indigo-900/40 bg-indigo-950/20">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-amber-400 via-pink-500 to-indigo-600 flex items-center justify-center text-white text-base shadow-md">
+          ✨
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h2 class="text-sm font-bold text-white tracking-tight">Magic Vibe-to-SaaS Transmuter</h2>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">TURNKEY PRODUCTION</span>
+          </div>
+          <p class="text-xs text-gray-400">Transform vibe-coded prototypes into hardened, enterprise-standard production SaaS</p>
+        </div>
+      </div>
+      <button id="btn-close-magic-modal" class="lg-btn-icon text-gray-400 hover:text-white">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Modal Body -->
+    <div class="p-6 overflow-y-auto flex-1 flex flex-col gap-5">
+      
+      <!-- Diagnostic Vibe Banner -->
+      <div id="magic-diagnostic-banner" class="rounded-xl border border-indigo-500/20 bg-indigo-950/30 p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-3.5">
+          <div class="w-10 h-10 rounded-full bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-xl shrink-0">
+            🪄
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-semibold text-white" id="magic-project-name">Analyzing project...</span>
+              <span class="text-[10px] font-mono text-indigo-300 px-1.5 py-0.5 bg-indigo-900/50 rounded" id="magic-stack-badge">Standard Stack</span>
+            </div>
+            <p class="text-xs text-gray-400 mt-0.5" id="magic-status-summary">Assessing production readiness gaps...</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3 shrink-0">
+          <div class="text-right">
+            <div class="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Production Readyness</div>
+            <div class="text-lg font-extrabold text-amber-400" id="magic-readiness-val">--%</div>
+          </div>
+          <div class="h-8 w-px bg-gray-700"></div>
+          <div class="text-right">
+            <div class="text-[10px] text-emerald-400 uppercase tracking-wider font-semibold">Projected Score</div>
+            <div class="text-lg font-extrabold text-emerald-400">95%+</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Turnkey Modules Selection -->
+      <div>
+        <div class="flex items-center justify-between mb-2.5">
+          <span class="text-xs font-bold text-gray-300 uppercase tracking-wider">Select Turnkey SaaS Modules to Inject</span>
+          <div class="flex gap-2 text-xs">
+            <button id="btn-magic-select-all" class="text-[11px] text-indigo-400 hover:text-indigo-300 underline">Select All</button>
+            <span class="text-gray-600">•</span>
+            <button id="btn-magic-deselect-all" class="text-[11px] text-gray-400 hover:text-gray-300 underline">Deselect All</button>
+          </div>
+        </div>
+
+        <!-- Modules Grid -->
+        <div id="magic-modules-list" class="grid grid-cols-1 md:grid-cols-2 gap-2.5 max-h-72 overflow-y-auto pr-1">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <!-- Execution Progress Stream (Hidden by default) -->
+      <div id="magic-progress-panel" class="hidden flex flex-col gap-2.5 p-4 rounded-xl bg-black/40 border border-indigo-500/30">
+        <div class="flex items-center justify-between text-xs">
+          <span class="font-bold text-indigo-300 flex items-center gap-2">
+            <span class="animate-spin inline-block">⚡</span>
+            <span id="magic-progress-status">Transmuting codebase into Turnkey Production SaaS...</span>
+          </span>
+          <span class="font-mono text-gray-400" id="magic-progress-step">Step 1/13</span>
+        </div>
+        <div class="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
+          <div id="magic-progress-bar" class="bg-gradient-to-r from-amber-400 via-pink-500 to-indigo-500 h-1.5 transition-all duration-300" style="width: 0%"></div>
+        </div>
+        <div id="magic-live-logs" class="max-h-32 overflow-y-auto font-mono text-[11px] text-gray-400 flex flex-col gap-1 mt-1"></div>
+      </div>
+
+      <!-- Success View (Hidden by default) -->
+      <div id="magic-success-panel" class="hidden p-4 rounded-xl bg-emerald-950/30 border border-emerald-500/40 flex flex-col gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-base">✓</div>
+          <div>
+            <h4 class="text-sm font-bold text-emerald-300">Turnkey Production Hardening Completed!</h4>
+            <p class="text-xs text-gray-300">All chosen enterprise configs, routes, error boundaries, and Docker environments have been injected.</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-2 text-center bg-black/30 p-2.5 rounded-lg border border-emerald-500/20 text-xs">
+          <div>
+            <div class="text-[10px] text-gray-400">Files Injected</div>
+            <div class="font-bold text-white text-sm" id="magic-res-files-count">0</div>
+          </div>
+          <div>
+            <div class="text-[10px] text-gray-400">Previous Score</div>
+            <div class="font-bold text-amber-400 text-sm" id="magic-res-old-score">--%</div>
+          </div>
+          <div>
+            <div class="text-[10px] text-gray-400">Hardened Score</div>
+            <div class="font-bold text-emerald-400 text-sm" id="magic-res-new-score">--%</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="px-6 py-4 border-t border-indigo-900/40 bg-indigo-950/20 flex items-center justify-between">
+      <div class="text-[11px] text-gray-400">
+        Non-destructive: creates new configs &amp; preserves existing project logic.
+      </div>
+      <div class="flex items-center gap-3">
+        <button id="btn-cancel-magic" class="lg-btn-ghost text-xs px-4 py-2 text-gray-400 hover:text-white">Close</button>
+        <button id="btn-execute-magic" class="magic-btn text-xs px-5 py-2 flex items-center gap-2 font-bold text-white rounded-lg shadow-lg">
+          <span id="magic-btn-spinner" class="hidden animate-spin">🪄</span>
+          <span id="magic-btn-text">⚡ Transmute to Production SaaS</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     VIEW: HOW TO USE (Full Page Developer Guide)
+═══════════════════════════════════════════════ -->
+<main id="view-how-to-use" class="lg-container flex-1 flex-col gap-6 py-6 min-h-0 hidden">
+  <header class="flex flex-col gap-4">
+    <div class="flex items-center justify-between gap-4 flex-wrap">
+      <div class="flex items-center gap-3.5">
+        <div class="docs-brand-icon flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg font-bold text-slate-900 dark:text-white tracking-tight">How to Use LaunchGate</h1>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-500 dark:text-indigo-300 border border-indigo-500/30">DEVELOPER MANUAL</span>
+          </div>
+          <p class="text-sm text-slate-500 dark:text-slate-400">Production-readiness workflow: scan → triage → auto-remediate → certify with zero blockers</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 flex-wrap">
+        <button id="btn-back-from-howto-overview" class="lg-btn-ghost text-xs px-3 py-1.5">Back to Overview</button>
+        <button id="btn-back-from-howto-workspace" class="lg-btn-ghost text-xs px-3 py-1.5">Back to Workspace</button>
+        <button id="btn-open-gates-docs-from-howto" class="lg-btn-primary text-xs px-3 py-1.5">Open 12 Gates Docs</button>
+      </div>
+    </div>
+    <div class="lg-divider"></div>
+  </header>
+
+  <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+    <!-- Main Content Stream -->
+    <div class="xl:col-span-8 flex flex-col gap-6">
+      
+      <!-- Section 1: Quickstart -->
+      <section id="section-quickstart" class="lg-card overflow-hidden">
+        <div class="p-6 flex flex-col gap-5">
+          <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-base">⚡</span>
+                <h2 class="text-base font-bold text-slate-900 dark:text-white">5-Minute Quickstart Pipeline</h2>
+              </div>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Move any web codebase from unverified vibe-code to hardened, production-certified readiness.</p>
+            </div>
+            <span class="text-[11px] font-mono font-medium px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">4 Core Steps</span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Step 1 -->
+            <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 p-4 flex flex-col gap-2.5 transition-all hover:border-indigo-500/40">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="w-6 h-6 rounded-md bg-indigo-600 text-white flex items-center justify-center text-xs font-bold shadow-xs">1</span>
+                  <h3 class="text-sm font-bold text-slate-900 dark:text-white">Connect Codebase</h3>
+                </div>
+                <span class="text-[10px] font-mono text-indigo-500 dark:text-indigo-400 font-semibold">Auto-Detect</span>
+              </div>
+              <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">Click <strong>Browse</strong> or paste a local directory path. LaunchGate instantly inspects dependency trees, routing patterns, and database layers to detect frameworks (Next.js, Vite, React, Express, Python, Firebase, etc.).</p>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 p-4 flex flex-col gap-2.5 transition-all hover:border-indigo-500/40">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="w-6 h-6 rounded-md bg-indigo-600 text-white flex items-center justify-center text-xs font-bold shadow-xs">2</span>
+                  <h3 class="text-sm font-bold text-slate-900 dark:text-white">Run 12-Gate Deep Audit</h3>
+                </div>
+                <span class="text-[10px] font-mono text-amber-500 dark:text-amber-400 font-semibold">&lt; 10s Preflight</span>
+              </div>
+              <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">Hit <strong>Run All 12 Gates</strong>. All security scanners execute in parallel across 12 distinct pillars: secrets hygiene, authentication BOLA/IDOR, SQL/RLS safety, LLM quota guards, observability, and bundle size.</p>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 p-4 flex flex-col gap-2.5 transition-all hover:border-indigo-500/40">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="w-6 h-6 rounded-md bg-indigo-600 text-white flex items-center justify-center text-xs font-bold shadow-xs">3</span>
+                  <h3 class="text-sm font-bold text-slate-900 dark:text-white">Triage P0 Blockers &amp; Auto-Fix</h3>
+                </div>
+                <span class="text-[10px] font-mono text-rose-500 dark:text-rose-400 font-semibold">Zero-Blocker Goal</span>
+              </div>
+              <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">Inspect findings categorized by severity (P0 Blocker, P1 High Risk, P2 Hygiene). Use one-click <strong>Auto-Fix</strong> with built-in AST verification and automatic git rollback if verification fails.</p>
+            </div>
+
+            <!-- Step 4 -->
+            <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 p-4 flex flex-col gap-2.5 transition-all hover:border-indigo-500/40">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="w-6 h-6 rounded-md bg-indigo-600 text-white flex items-center justify-center text-xs font-bold shadow-xs">4</span>
+                  <h3 class="text-sm font-bold text-slate-900 dark:text-white">Verify &amp; Issue Certificate</h3>
+                </div>
+                <span class="text-[10px] font-mono text-emerald-500 dark:text-emerald-400 font-semibold">100% Certified</span>
+              </div>
+              <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">Once all P0 blockers are resolved, mark gates verified and run Gate 12 preflight. Export an official <strong>Certificate of Readiness</strong> or download full compliance SARIF reports for SOC 2 and security auditors.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 2: MCP Orchestration Guide -->
+      <section id="section-mcp-guide" class="lg-card overflow-hidden">
+        <div class="p-6 flex flex-col gap-5">
+          <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-base">🤖</span>
+                <h2 class="text-base font-bold text-slate-900 dark:text-white">Drive LaunchGate from Your AI Agent (MCP)</h2>
+              </div>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">LaunchGate runs as a local Model Context Protocol (MCP) server over standard input/output. All code stays 100% on your machine.</p>
+            </div>
+            <span class="text-[11px] font-mono font-medium px-2 py-0.5 rounded bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">MCP v1.1.0</span>
+          </div>
+
+          <!-- IDE Config Tabs -->
+          <div class="flex flex-col gap-3">
+            <div class="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2 text-xs">
+              <button class="mcp-ide-tab px-3 py-1.5 rounded-md font-semibold bg-indigo-600 text-white" data-ide="cursor">Cursor IDE</button>
+              <button class="mcp-ide-tab px-3 py-1.5 rounded-md font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white" data-ide="claude">Claude Code</button>
+              <button class="mcp-ide-tab px-3 py-1.5 rounded-md font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white" data-ide="windsurf">Windsurf</button>
+              <button class="mcp-ide-tab px-3 py-1.5 rounded-md font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white" data-ide="vscode">VS Code</button>
+            </div>
+
+            <!-- Config Snippet -->
+            <div class="relative rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-950 p-4 font-mono text-[11px] text-cyan-300 overflow-x-auto">
+              <button id="btn-copy-mcp-config" class="absolute top-3 right-3 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[10px] font-sans flex items-center gap-1 border border-slate-700 transition">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+                <span>Copy Config</span>
+              </button>
+              <pre id="mcp-config-display" class="pt-1"><code>{
+  "mcpServers": {
+    "launchgate": {
+      "command": "node",
+      "args": ["F:/App Checker Tool/mcp-server.js"],
+      "cwd": "F:/App Checker Tool"
+    }
+  }
+}</code></pre>
+            </div>
+          </div>
+
+          <!-- Available MCP Tools Table -->
+          <div>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">Available MCP Tool Registry</h3>
+            <div class="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden text-xs">
+              <table class="w-full text-left">
+                <thead class="bg-slate-100 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800 text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                  <tr>
+                    <th class="p-3">Tool Name</th>
+                    <th class="p-3">Arguments</th>
+                    <th class="p-3">Capability</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200 dark:divide-slate-800/80 bg-white dark:bg-slate-950/40 text-slate-600 dark:text-slate-300">
+                  <tr>
+                    <td class="p-3 font-mono text-indigo-600 dark:text-cyan-400 font-semibold">launchgate_scan</td>
+                    <td class="p-3 font-mono text-[11px] text-slate-500">{ projectPath?, readOnly? }</td>
+                    <td class="p-3">Runs all 12 gates and returns readiness score, P0 blockers, and findings summary.</td>
+                  </tr>
+                  <tr>
+                    <td class="p-3 font-mono text-indigo-600 dark:text-cyan-400 font-semibold">launchgate_apply_quick_fix</td>
+                    <td class="p-3 font-mono text-[11px] text-slate-500">{ findingId, projectPath? }</td>
+                    <td class="p-3">Applies safe AST auto-fix with instant re-verification and git rollback on regression.</td>
+                  </tr>
+                  <tr>
+                    <td class="p-3 font-mono text-indigo-600 dark:text-cyan-400 font-semibold">launchgate_fix_until_green</td>
+                    <td class="p-3 font-mono text-[11px] text-slate-500">{ projectPath?, maxIterations? }</td>
+                    <td class="p-3">Autonomous remediation loop: applies fixes until zero P0 blockers remain.</td>
+                  </tr>
+                  <tr>
+                    <td class="p-3 font-mono text-indigo-600 dark:text-cyan-400 font-semibold">launchgate_get_findings</td>
+                    <td class="p-3 font-mono text-[11px] text-slate-500">{ gateId, severity? }</td>
+                    <td class="p-3">Inspects granular findings, affected lines, and Context7 remediation advice.</td>
+                  </tr>
+                  <tr>
+                    <td class="p-3 font-mono text-indigo-600 dark:text-cyan-400 font-semibold">launchgate_export_sarif</td>
+                    <td class="p-3 font-mono text-[11px] text-slate-500">{ outputPath? }</td>
+                    <td class="p-3">Generates OASIS standard SARIF v2.1.0 report for GitHub Code Scanning / CI.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 3: Troubleshooting & FAQs -->
+      <section id="section-troubleshooting" class="lg-card overflow-hidden">
+        <div class="p-6 flex flex-col gap-4">
+          <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-base">🛠️</span>
+                <h2 class="text-base font-bold text-slate-900 dark:text-white">Troubleshooting, Whitelisting &amp; FAQs</h2>
+              </div>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Common developer questions, false-positive handling, and environment configuration.</p>
+            </div>
+          </div>
+
+          <div class="space-y-3 text-xs">
+            <!-- FAQ 1 -->
+            <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40">
+              <h3 class="font-bold text-slate-900 dark:text-white text-sm mb-1">How do I whitelist template secrets or test credentials?</h3>
+              <p class="text-slate-600 dark:text-slate-300 leading-relaxed">LaunchGate automatically ignores dummy values (e.g. <code>postgres://user:password@localhost</code> or <code>sk-dummy-test-key</code>). For custom test files, add the comment <code class="text-indigo-600 dark:text-indigo-400 font-mono">// launchgate-ignore</code> on the preceding line, or configure exclusions in <code>.launchgate-ignore</code> in your project root.</p>
+            </div>
+
+            <!-- FAQ 2 -->
+            <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40">
+              <h3 class="font-bold text-slate-900 dark:text-white text-sm mb-1">Why was an AI or email service flagged by Gate 5?</h3>
+              <p class="text-slate-600 dark:text-slate-300 leading-relaxed">Gate 5 checks for raw LLM SDK imports without cost/rate-limiting wrappers. LaunchGate uses token-boundary matching to prevent false positives on common words like "email" or "maintain". If you use an external gateway (like Helicone or LiteLLM), mark the gate verified in the Workspace tab.</p>
+            </div>
+
+            <!-- FAQ 3 -->
+            <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40">
+              <h3 class="font-bold text-slate-900 dark:text-white text-sm mb-1">How can I run LaunchGate in headless CI/CD pipelines?</h3>
+              <p class="text-slate-600 dark:text-slate-300 leading-relaxed">Use the preflight CLI: <code class="text-indigo-600 dark:text-cyan-400 font-mono">node cli.js scan --read-only --fail-on-p0</code>. This command scans the repository without writing any files and exits with status code 1 if any P0 blockers are present, perfectly integrating into GitHub Actions, GitLab CI, or pre-push hooks.</p>
+            </div>
+
+            <!-- FAQ 4 -->
+            <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40">
+              <h3 class="font-bold text-slate-900 dark:text-white text-sm mb-1">Where is feedback sent and what telemetry is collected?</h3>
+              <p class="text-slate-600 dark:text-slate-300 leading-relaxed">LaunchGate stores diagnostics strictly to your local machine at <code>~/.launchgate/feedback.jsonl</code>. When you click <strong>Open GitHub Issue</strong> or <strong>Send via Email</strong>, only sanitized counts, framework names, and system versions are transferred. Zero source code or secret tokens are ever sent.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- Right: High-Contrast Jump Navigation Cards -->
+    <aside class="xl:col-span-4 flex flex-col gap-5">
+      <section class="lg-card">
+        <div class="p-5 flex flex-col gap-3.5">
+          <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2.5">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-1.5">
+              <span>🧭</span>
+              <span>Quick Navigation</span>
+            </h3>
+            <span class="text-[10px] text-slate-400">Interactive</span>
+          </div>
+
+          <div class="flex flex-col gap-2.5">
+            <!-- Jump: Quickstart -->
+            <button id="jump-to-quickstart" class="howto-jump-btn group text-left p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/70 hover:border-indigo-500/50 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 transition-all flex items-center justify-between shadow-2xs">
+              <div class="flex items-center gap-3">
+                <span class="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-500/30 flex items-center justify-center font-bold text-sm shrink-0">⚡</span>
+                <div>
+                  <div class="text-xs font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors">5-Minute Quickstart</div>
+                  <div class="text-[11px] text-slate-500 dark:text-slate-400">4 core steps to certified production</div>
+                </div>
+              </div>
+              <span class="text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 group-hover:translate-x-0.5 transition-all text-xs font-bold">→</span>
+            </button>
+
+            <!-- Jump: MCP Agent Guide -->
+            <button id="jump-to-mcp" class="howto-jump-btn group text-left p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/70 hover:border-indigo-500/50 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 transition-all flex items-center justify-between shadow-2xs">
+              <div class="flex items-center gap-3">
+                <span class="w-8 h-8 rounded-lg bg-cyan-50 dark:bg-cyan-950/60 text-cyan-600 dark:text-cyan-400 border border-cyan-200/80 dark:border-cyan-500/30 flex items-center justify-center font-bold text-sm shrink-0">🤖</span>
+                <div>
+                  <div class="text-xs font-bold text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-300 transition-colors">MCP Setup &amp; IDE Matrix</div>
+                  <div class="text-[11px] text-slate-500 dark:text-slate-400">Cursor, Claude Code, Windsurf</div>
+                </div>
+              </div>
+              <span class="text-slate-400 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 group-hover:translate-x-0.5 transition-all text-xs font-bold">→</span>
+            </button>
+
+            <!-- Jump: 12 Gates Reference -->
+            <button id="jump-to-gates" class="howto-jump-btn group text-left p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/70 hover:border-indigo-500/50 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 transition-all flex items-center justify-between shadow-2xs">
+              <div class="flex items-center gap-3">
+                <span class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-500/30 flex items-center justify-center font-bold text-sm shrink-0">📚</span>
+                <div>
+                  <div class="text-xs font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-300 transition-colors">12 Gates Encyclopedia</div>
+                  <div class="text-[11px] text-slate-500 dark:text-slate-400">All audit rules &amp; standards</div>
+                </div>
+              </div>
+              <span class="text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 group-hover:translate-x-0.5 transition-all text-xs font-bold">→</span>
+            </button>
+
+            <!-- Jump: Troubleshooting -->
+            <button id="jump-to-trouble" class="howto-jump-btn group text-left p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/70 hover:border-indigo-500/50 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 transition-all flex items-center justify-between shadow-2xs">
+              <div class="flex items-center gap-3">
+                <span class="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200/80 dark:border-amber-500/30 flex items-center justify-center font-bold text-sm shrink-0">🛠️</span>
+                <div>
+                  <div class="text-xs font-bold text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-300 transition-colors">Troubleshooting &amp; FAQs</div>
+                  <div class="text-[11px] text-slate-500 dark:text-slate-400">Whitelisting, CLI, false-positives</div>
+                </div>
+              </div>
+              <span class="text-slate-400 group-hover:text-amber-600 dark:group-hover:text-amber-400 group-hover:translate-x-0.5 transition-all text-xs font-bold">→</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Ready to Audit Card -->
+      <section class="lg-card">
+        <div class="p-5 flex flex-col gap-3">
+          <div class="flex items-center gap-2">
+            <span class="text-lg">🎯</span>
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white">Ready to Preflight?</h3>
+          </div>
+          <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Start an automated scan or test with the bundled Vibe-SaaS demo fixture to observe zero-blocker certification in real time.</p>
+          <div class="flex flex-col gap-2 pt-1">
+            <button id="btn-open-gates-docs-from-howto-2" class="lg-btn-primary text-xs px-3 py-2 w-full font-medium justify-center flex items-center gap-2">
+              <span>🚀 Open Full 12 Gates Docs</span>
+            </button>
+            <button id="btn-howto-load-demo" class="lg-btn-ghost text-xs px-3 py-1.5 w-full justify-center flex items-center gap-1.5 text-sky-500 hover:text-sky-600 border border-sky-500/30">
+              <span>⚡ Try Bundled Demo Project</span>
+            </button>
+          </div>
+        </div>
+      </section>
+    </aside>
+  </div>
+</main>
+
+<!-- ═══════════════════════════════════════════════
+     VIEW: 12 GATES DOCUMENTATION (Full Page)
+═══════════════════════════════════════════════ -->
+<main id="view-gates-docs" class="lg-container flex-1 flex-col gap-6 py-6 min-h-0 hidden">
+  <header class="flex flex-col gap-4">
+    <div class="flex items-center justify-between gap-4 flex-wrap">
+      <div class="flex items-center gap-3.5">
+        <div class="docs-brand-icon flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold text-slate-900 dark:text-white tracking-tight">12 Gates Documentation</h1>
+          <p class="text-sm text-slate-500 dark:text-slate-400">Audit criteria, standards, findings, and remediation guidance</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 flex-wrap">
+        <button id="btn-back-from-docs-overview" class="lg-btn-ghost text-xs px-3 py-1.5">Back to Overview</button>
+        <button id="btn-back-from-docs-workspace" class="lg-btn-ghost text-xs px-3 py-1.5">Back to Workspace</button>
+        <button id="btn-open-howto-from-docs" class="lg-btn-ghost text-xs px-3 py-1.5">How to Use</button>
+      </div>
+    </div>
+    <div class="lg-divider"></div>
+  </header>
+
+  <section class="lg-card">
+    <div class="p-5 flex flex-col gap-4">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <div class="flex items-center gap-2 flex-wrap">
+          <button class="gates-full-filter-btn active" data-filter="all">All Gates (12)</button>
+          <button class="gates-full-filter-btn" data-filter="security">Security &amp; Auth</button>
+          <button class="gates-full-filter-btn" data-filter="data">Data &amp; APIs</button>
+          <button class="gates-full-filter-btn" data-filter="reliability">Reliability &amp; UX</button>
+          <button class="gates-full-filter-btn" data-filter="devops">DevOps &amp; Infra</button>
+        </div>
+        <div class="relative w-full lg:w-[320px]">
+          <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          <input id="gates-full-search" type="text" placeholder="Search gates, checks, findings..." class="lg-input w-full pl-9 pr-3 py-2 text-sm">
+        </div>
+      </div>
+      <div id="gates-full-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+    </div>
+  </section>
+</main>
+
+<!-- ═══════════════════════════════════════════════
+     📖 HOW TO USE LAUNCHGATE MODAL (kept for backwards compat)
+═══════════════════════════════════════════════ -->
+<div id="how-to-use-modal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4">
+  <div class="lg-modal flex flex-col w-full max-w-3xl max-h-[90vh] border border-indigo-500/30 shadow-2xl bg-gradient-to-b from-gray-900 to-gray-950">
+    <!-- Header -->
+    <div class="flex items-center justify-between px-6 py-4 border-b border-indigo-900/40 bg-indigo-950/20">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-indigo-600/30 text-indigo-400 border border-indigo-500/30 flex items-center justify-center font-bold text-base">
+          📖
+        </div>
+        <div>
+          <h2 class="text-sm font-bold text-white tracking-tight">How to Use LaunchGate Command Center</h2>
+          <p class="text-xs text-gray-400">Step-by-step pre-launch audit, auto-hardening, and release verification workflow</p>
+        </div>
+      </div>
+      <button id="btn-close-how-to-use" class="lg-btn-icon text-gray-400 hover:text-white">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="p-6 overflow-y-auto flex-1 flex flex-col gap-6">
+      
+      <!-- 4-Step Visual Flow -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        
+        <!-- Step 1 -->
+        <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-indigo-500/40 transition-colors">
+          <div class="flex items-center gap-2.5 mb-2">
+            <span class="w-6 h-6 rounded-full bg-indigo-600/20 text-indigo-400 font-bold text-xs flex items-center justify-center border border-indigo-500/30">1</span>
+            <h3 class="text-xs font-bold text-white uppercase tracking-wider">Connect Any Project</h3>
+          </div>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Click <strong>Browse</strong> to select a local folder, or paste a <strong>GitHub / GitLab repo URL</strong> (with PAT token for private repos) to clone and audit in seconds.
+          </p>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-indigo-500/40 transition-colors">
+          <div class="flex items-center gap-2.5 mb-2">
+            <span class="w-6 h-6 rounded-full bg-indigo-600/20 text-indigo-400 font-bold text-xs flex items-center justify-center border border-indigo-500/30">2</span>
+            <h3 class="text-xs font-bold text-white uppercase tracking-wider">Run All 12 Gates</h3>
+          </div>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Click <strong>Run All Gates</strong> to execute the full preflight static audit across Secrets, Auth, Database RLS, Webhooks, AI Quotas, Sentry, Performance, and CI/CD.
+          </p>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-indigo-500/40 transition-colors">
+          <div class="flex items-center gap-2.5 mb-2">
+            <span class="w-6 h-6 rounded-full bg-pink-600/20 text-pink-400 font-bold text-xs flex items-center justify-center border border-pink-500/30">3</span>
+            <h3 class="text-xs font-bold text-white uppercase tracking-wider">Magic Vibe-to-SaaS</h3>
+          </div>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            For vibe-coded prototypes (v0, Bolt, Lovable, Cursor), click <strong>✨ Magic SaaS</strong> to automatically synthesize and inject missing production security headers, rate limiters, Docker, and ErrorBoundaries.
+          </p>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-indigo-500/40 transition-colors">
+          <div class="flex items-center gap-2.5 mb-2">
+            <span class="w-6 h-6 rounded-full bg-emerald-600/20 text-emerald-400 font-bold text-xs flex items-center justify-center border border-emerald-500/30">4</span>
+            <h3 class="text-xs font-bold text-white uppercase tracking-wider">Certify &amp; Deploy</h3>
+          </div>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Click <strong>Certificate</strong> to unlock the formal timestamped release report, export <strong>OASIS SARIF</strong> for GitHub Code Scanning, or print the client-ready A4 release certificate.
+          </p>
+        </div>
+
+      </div>
+
+      <!-- Quick Tips Box -->
+      <div class="rounded-xl bg-indigo-950/30 border border-indigo-500/20 p-4">
+        <h4 class="text-xs font-bold text-indigo-300 uppercase tracking-wider mb-2 flex items-center gap-2">
+          <span>💡</span> <span>Pro Developer &amp; CI/CD Shortcuts</span>
+        </h4>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-[11px] text-slate-300">
+          <div class="bg-black/30 p-2.5 rounded border border-indigo-500/10">
+            <div class="font-bold text-white mb-1">CI/CD Pre-Push Blocker</div>
+            <p class="text-slate-400">Use <code class="text-indigo-300 font-mono">node cli.js --fail-on-p0</code> in GitHub Actions to block breaking commits.</p>
+          </div>
+          <div class="bg-black/30 p-2.5 rounded border border-indigo-500/10">
+            <div class="font-bold text-white mb-1">AI IDE Agent Rules</div>
+            <p class="text-slate-400">Export rules for Cursor, Claude Code, and Windsurf via <strong>Tools &gt; Agent Rules</strong>.</p>
+          </div>
+          <div class="bg-black/30 p-2.5 rounded border border-indigo-500/10">
+            <div class="font-bold text-white mb-1">1-Click Quick Patches</div>
+            <p class="text-slate-400">Click <strong>⚡ Apply Quick Patch</strong> directly inside any finding card to resolve gaps deterministically.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="px-6 py-4 border-t border-indigo-900/40 bg-indigo-950/20 flex items-center justify-end">
+      <button id="btn-close-how-to-use-footer" class="lg-btn-primary text-xs px-4 py-2">Got it, Let's Audit!</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     📚 12-GATE REFERENCE & DOCUMENTATION MODAL
+═══════════════════════════════════════════════ -->
+<div id="gates-docs-modal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4">
+  <div class="lg-modal flex flex-col w-full max-w-4xl max-h-[90vh] border border-indigo-500/30 shadow-2xl bg-gradient-to-b from-gray-900 to-gray-950">
+    <!-- Header -->
+    <div class="flex items-center justify-between px-6 py-4 border-b border-indigo-900/40 bg-indigo-950/20">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-cyan-600/30 text-cyan-400 border border-cyan-500/30 flex items-center justify-center font-bold text-base">
+          📚
+        </div>
+        <div>
+          <h2 class="text-sm font-bold text-white tracking-tight">12 Production Readiness Gates — Complete Reference</h2>
+          <p class="text-xs text-gray-400">Explore exact checks, vulnerabilities caught, and production requirements for every gate</p>
+        </div>
+      </div>
+      <button id="btn-close-gates-docs" class="lg-btn-icon text-gray-400 hover:text-white">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <!-- Search & Filter Controls -->
+    <div class="px-6 py-3 border-b border-slate-800 bg-slate-950/60 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div class="relative w-full sm:w-72">
+        <svg class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <input type="text" id="gates-docs-search" placeholder="Search gates by vulnerability or keyword..." class="lg-input w-full pl-8 pr-3 py-1.5 text-xs font-mono">
+      </div>
+      <div class="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto text-xs">
+        <button class="gates-filter-btn px-2.5 py-1 rounded text-white bg-indigo-600 text-[11px] font-medium" data-filter="all">All (12)</button>
+        <button class="gates-filter-btn px-2.5 py-1 rounded text-slate-400 hover:text-white bg-slate-800 text-[11px]" data-filter="security">Security &amp; Auth</button>
+        <button class="gates-filter-btn px-2.5 py-1 rounded text-slate-400 hover:text-white bg-slate-800 text-[11px]" data-filter="data">Data &amp; APIs</button>
+        <button class="gates-filter-btn px-2.5 py-1 rounded text-slate-400 hover:text-white bg-slate-800 text-[11px]" data-filter="devops">DevOps &amp; Infra</button>
+      </div>
+    </div>
+
+    <!-- Gates Cards Container -->
+    <div class="p-6 overflow-y-auto flex-1 flex flex-col gap-4" id="gates-docs-cards-list">
+      <!-- Dynamically rendered by JS -->
+    </div>
+
+    <!-- Footer -->
+    <div class="px-6 py-3.5 border-t border-indigo-900/40 bg-indigo-950/20 flex items-center justify-between text-xs text-slate-400">
+      <span>Aligned with OWASP API Security Top 10, SOC 2 Type II, and GDPR standards.</span>
+      <button id="btn-close-gates-docs-footer" class="lg-btn-ghost text-xs px-4 py-1.5 text-slate-300 hover:text-white">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     🐞 BETA FEEDBACK & DIAGNOSTIC MODAL
+═══════════════════════════════════════════════ -->
+<div id="feedback-modal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4">
+  <div class="lg-modal flex flex-col w-full max-w-2xl max-h-[90vh] border border-amber-500/30 shadow-2xl bg-gradient-to-b from-gray-900 to-gray-950 rounded-xl overflow-hidden">
+    <!-- Header -->
+    <div class="flex items-center justify-between px-6 py-4 border-b border-amber-900/40 bg-amber-950/20">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center font-bold text-base">
+          🐞
+        </div>
+        <div>
+          <h2 class="text-sm font-bold text-white tracking-tight">Beta Tester Feedback &amp; Diagnostics</h2>
+          <p class="text-xs text-gray-400">Submit findings, report false positives, or export sanitized diagnostic telemetry</p>
+        </div>
+      </div>
+      <button id="btn-close-feedback" class="lg-btn-icon text-gray-400 hover:text-white">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="p-6 overflow-y-auto flex-1 space-y-4 text-xs">
+      <!-- Direct Submission Channels Box -->
+      <div id="feedback-channels-banner" class="feedback-channels-banner p-4 rounded-xl flex flex-col gap-3">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <span class="feedback-channels-title font-bold flex items-center gap-2 text-xs">
+            <span class="text-sm">📬</span>
+            <span>Where do you want to send this feedback?</span>
+          </span>
+          <span class="feedback-sanitized-badge text-[11px] font-semibold flex items-center gap-1.5 px-2.5 py-0.5 rounded-full">
+            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+            100% Sanitized (Zero Code/Secrets)
+          </span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <button id="btn-submit-feedback" type="button" class="feedback-btn-submit text-xs py-2.5 px-3 flex items-center justify-center gap-2 font-semibold rounded-lg transition-all shadow-xs">
+            <span id="btn-submit-feedback-spinner" class="hidden animate-spin">⚡</span>
+            <span>🚀 Submit In-App</span>
+          </button>
+          <a id="btn-github-feedback" href="https://github.com/launchgate/launchgate/issues/new" target="_blank" rel="noopener noreferrer" class="feedback-btn-secondary text-xs py-2.5 px-3 flex items-center justify-center gap-2 font-semibold rounded-lg transition-all">
+            <span>🐙</span>
+            <span>Open GitHub Issue</span>
+          </a>
+          <a id="btn-email-feedback" href="mailto:feedback@launchgate.dev" class="feedback-btn-secondary text-xs py-2.5 px-3 flex items-center justify-center gap-2 font-semibold rounded-lg transition-all">
+            <span>✉️</span>
+            <span>Send via Email</span>
+          </a>
+        </div>
+        <p class="feedback-channels-subtext text-[11px] leading-relaxed">
+          Submitting in-app records your report safely to <code class="feedback-channels-code font-mono">~/.launchgate/feedback.jsonl</code>. GitHub Issue pre-fills a ticket with your diagnostic summary.
+        </p>
+      </div>
+
+      <div>
+        <label class="block feedback-label text-xs font-semibold mb-1">Your Observations / Bug Description</label>
+        <textarea id="feedback-user-notes" rows="3" placeholder="Describe any false positive, unexpected analyzer behavior, or feature suggestions..." class="feedback-input lg-input w-full p-2.5 text-xs rounded-lg"></textarea>
+      </div>
+
+      <div>
+        <label class="block feedback-label text-xs font-semibold mb-1">Contact Email or GitHub Username <span class="feedback-sublabel font-normal">(Optional, for follow-up)</span></label>
+        <input type="text" id="feedback-user-contact" placeholder="e.g. dev@company.com or @username" class="feedback-input lg-input w-full p-2 text-xs rounded-lg">
+      </div>
+
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <label class="feedback-label text-xs font-semibold">Sanitized Diagnostic Report</label>
+          <span class="text-[10px] feedback-sublabel font-mono" id="feedback-report-timestamp">Telemetry Preview</span>
+        </div>
+        <pre id="feedback-diagnostic-preview" class="feedback-diagnostic-preview p-3.5 rounded-xl font-mono text-[11px] overflow-x-auto max-h-40 whitespace-pre-wrap"></pre>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="px-6 py-4 border-t border-slate-800 bg-slate-950/40 flex items-center justify-between">
+      <span class="text-[11px] text-slate-500">Thank you for testing LaunchGate!</span>
+      <div class="flex items-center gap-2">
+        <button id="btn-copy-diagnostic" class="lg-btn-ghost text-xs px-3 py-2 flex items-center gap-1.5 font-medium border border-slate-700 text-slate-300 hover:text-white">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+          <span>Copy to Clipboard</span>
+        </button>
+        <button id="btn-close-feedback-footer" class="lg-btn-ghost text-xs px-3 py-2 text-slate-400 hover:text-white">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<script src="js/terminal.js?v=20261025b"></script>
+<script src="js/ui-components.js?v=20261025b"></script>
+<script src="js/app.js?v=20261025b"></script>
+</body>
+</html>
