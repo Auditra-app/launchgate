@@ -1098,6 +1098,12 @@ function startServer(port, maxAttempts = 5) {
       console.info(`🌐 Direct Access URL: http://<your-ip>:${currentPort}/?token=${sessionToken}`);
     }
     console.info(`======================================================\n`);
+
+    if (!process.env.CI && !process.argv.includes('--no-open')) {
+      const url = `http://localhost:${currentPort}`;
+      const openCmd = process.platform === 'win32' ? `start "" "${url}"` : (process.platform === 'darwin' ? `open "${url}"` : `xdg-open "${url}"`);
+      require('child_process').exec(openCmd, () => {});
+    }
   });
 
   server.on('error', (err) => {
