@@ -915,135 +915,127 @@
 </div>
 
 <!-- ═══════════════════════════════════════════════
-     ✨ MAGIC VIBE-TO-SAAS TRANSMUTATION MODAL
-═══════════════════════════════════════════════ -->
-<div id="magic-modal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4">
-  <div class="lg-modal flex flex-col w-full max-w-3xl max-h-[90vh] border border-indigo-500/30 shadow-2xl bg-gradient-to-b from-gray-900 to-gray-950">
-    
-    <!-- Modal Header -->
-    <div class="flex items-center justify-between px-6 py-4 border-b border-indigo-900/40 bg-indigo-950/20">
+     🛡️ QUICK-FIX BACKUP & DIFF REVIEW MODAL
+     ═══════════════════════════════════════════════ -->
+<div id="quick-fix-diff-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+  <div class="lg-modal flex flex-col w-full max-w-2xl max-h-[85vh] overflow-hidden">
+    <!-- Header -->
+    <div class="flex items-center justify-between px-6 py-4 border-b lg-border">
       <div class="flex items-center gap-3">
-        <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-amber-400 via-pink-500 to-indigo-600 flex items-center justify-center text-white text-base shadow-md">
-          ✨
-        </div>
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold" style="background: var(--c-p2-bg, rgba(56,189,248,0.12)); color: var(--c-p2, #38bdf8);">🪄</div>
         <div>
-          <div class="flex items-center gap-2">
-            <h2 class="text-sm font-bold text-white tracking-tight">Magic Vibe-to-SaaS Transmuter</h2>
-            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">TURNKEY PRODUCTION</span>
-          </div>
-          <p class="text-xs text-gray-400">Transform vibe-coded prototypes into hardened, enterprise-standard production SaaS</p>
+          <h3 id="qf-modal-title" class="text-sm font-semibold lg-text-primary tracking-tight">Quick Patch Applied</h3>
+          <p id="qf-modal-subtitle" class="text-xs lg-text-muted">Deterministic code remediation verified</p>
         </div>
       </div>
-      <button id="btn-close-magic-modal" class="lg-btn-icon text-gray-400 hover:text-white">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-        </svg>
+      <button id="btn-close-qf-modal" class="lg-btn-icon">✕</button>
+    </div>
+
+    <!-- Body -->
+    <div class="p-6 flex flex-col gap-4 overflow-y-auto">
+      <!-- Safety Backup Notice -->
+      <div class="p-3.5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-2" style="background: var(--c-surface-2); border-color: var(--c-border-mid);">
+        <div class="flex items-center gap-2.5">
+          <span class="text-lg">🛡️</span>
+          <div>
+            <div class="font-bold lg-text-primary">Pre-Modification Backup Saved</div>
+            <div id="qf-backup-path" class="font-mono text-xs font-semibold" style="color: var(--c-p2, #38bdf8);">.launchgate/backups/...</div>
+          </div>
+        </div>
+        <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full shrink-0" style="background: var(--c-pass-bg); color: var(--c-pass); border: 1px solid var(--c-pass-border);">PRESERVED ON DISK</span>
+      </div>
+
+      <!-- File details & Diffs -->
+      <div class="flex flex-col gap-2">
+        <div class="flex items-center justify-between text-xs">
+          <span class="font-bold lg-text-secondary uppercase tracking-wider text-[11px]">Changes Made &amp; Diff</span>
+          <div class="flex items-center gap-2 font-mono text-[11px]">
+            <span id="qf-additions-badge" class="px-2 py-0.5 rounded-full font-bold" style="background: var(--c-pass-bg); color: var(--c-pass); border: 1px solid var(--c-pass-border);">+0 lines</span>
+            <span id="qf-deletions-badge" class="px-2 py-0.5 rounded-full font-bold" style="background: var(--c-p0-bg); color: var(--c-p0); border: 1px solid var(--c-p0-border);">-0 lines</span>
+          </div>
+        </div>
+        <div id="qf-diff-code-wrapper" class="rounded-xl border p-3 font-mono text-xs leading-relaxed max-h-72 overflow-y-auto overflow-x-auto" style="background: #0d1117; border-color: rgba(255,255,255,0.15);">
+          <pre id="qf-diff-content" style="color: #f0f6fc; margin: 0;"></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="px-6 py-3.5 border-t lg-border flex items-center justify-between">
+      <button id="btn-rollback-qf" class="text-xs px-3.5 py-2 rounded-lg transition-colors flex items-center gap-1.5 font-medium" style="background: var(--c-p0-bg); color: var(--c-p0); border: 1px solid var(--c-p0-border);">
+        <span>↩️</span> Rollback This Fix
+      </button>
+      <button id="btn-confirm-qf" class="lg-btn-primary text-xs px-5 py-2 font-bold flex items-center gap-1.5">
+        <span>✓</span> Keep Changes &amp; Rescan
       </button>
     </div>
+  </div>
+</div>
 
-    <!-- Modal Body -->
-    <div class="p-6 overflow-y-auto flex-1 flex flex-col gap-5">
-      
-      <!-- Diagnostic Vibe Banner -->
-      <div id="magic-diagnostic-banner" class="rounded-xl border border-indigo-500/20 bg-indigo-950/30 p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div class="flex items-center gap-3.5">
-          <div class="w-10 h-10 rounded-full bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-xl shrink-0">
-            🪄
-          </div>
-          <div>
-            <div class="flex items-center gap-2">
-              <span class="text-xs font-semibold text-white" id="magic-project-name">Analyzing project...</span>
-              <span class="text-[10px] font-mono text-indigo-300 px-1.5 py-0.5 bg-indigo-900/50 rounded" id="magic-stack-badge">Standard Stack</span>
-            </div>
-            <p class="text-xs text-gray-400 mt-0.5" id="magic-status-summary">Assessing production readiness gaps...</p>
-          </div>
-        </div>
-        <div class="flex items-center gap-3 shrink-0">
-          <div class="text-right">
-            <div class="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Production Readyness</div>
-            <div class="text-lg font-extrabold text-amber-400" id="magic-readiness-val">--%</div>
-          </div>
-          <div class="h-8 w-px bg-gray-700"></div>
-          <div class="text-right">
-            <div class="text-[10px] text-emerald-400 uppercase tracking-wider font-semibold">Projected Score</div>
-            <div class="text-lg font-extrabold text-emerald-400">95%+</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Turnkey Modules Selection -->
-      <div>
-        <div class="flex items-center justify-between mb-2.5">
-          <span class="text-xs font-bold text-gray-300 uppercase tracking-wider">Select Turnkey SaaS Modules to Inject</span>
-          <div class="flex gap-2 text-xs">
-            <button id="btn-magic-select-all" class="text-[11px] text-indigo-400 hover:text-indigo-300 underline">Select All</button>
-            <span class="text-gray-600">•</span>
-            <button id="btn-magic-deselect-all" class="text-[11px] text-gray-400 hover:text-gray-300 underline">Deselect All</button>
-          </div>
-        </div>
-
-        <!-- Modules Grid -->
-        <div id="magic-modules-list" class="grid grid-cols-1 md:grid-cols-2 gap-2.5 max-h-72 overflow-y-auto pr-1">
-          <!-- Dynamically populated -->
-        </div>
-      </div>
-
-      <!-- Execution Progress Stream (Hidden by default) -->
-      <div id="magic-progress-panel" class="hidden flex flex-col gap-2.5 p-4 rounded-xl bg-black/40 border border-indigo-500/30">
-        <div class="flex items-center justify-between text-xs">
-          <span class="font-bold text-indigo-300 flex items-center gap-2">
-            <span class="animate-spin inline-block">⚡</span>
-            <span id="magic-progress-status">Transmuting codebase into Turnkey Production SaaS...</span>
-          </span>
-          <span class="font-mono text-gray-400" id="magic-progress-step">Step 1/13</span>
-        </div>
-        <div class="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
-          <div id="magic-progress-bar" class="bg-gradient-to-r from-amber-400 via-pink-500 to-indigo-500 h-1.5 transition-all duration-300" style="width: 0%"></div>
-        </div>
-        <div id="magic-live-logs" class="max-h-32 overflow-y-auto font-mono text-[11px] text-gray-400 flex flex-col gap-1 mt-1"></div>
-      </div>
-
-      <!-- Success View (Hidden by default) -->
-      <div id="magic-success-panel" class="hidden p-4 rounded-xl bg-emerald-950/30 border border-emerald-500/40 flex flex-col gap-3">
-        <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-base">✓</div>
-          <div>
-            <h4 class="text-sm font-bold text-emerald-300">Turnkey Production Hardening Completed!</h4>
-            <p class="text-xs text-gray-300">All chosen enterprise configs, routes, error boundaries, and Docker environments have been injected.</p>
-          </div>
-        </div>
-        <div class="grid grid-cols-3 gap-2 text-center bg-black/30 p-2.5 rounded-lg border border-emerald-500/20 text-xs">
-          <div>
-            <div class="text-[10px] text-gray-400">Files Injected</div>
-            <div class="font-bold text-white text-sm" id="magic-res-files-count">0</div>
-          </div>
-          <div>
-            <div class="text-[10px] text-gray-400">Previous Score</div>
-            <div class="font-bold text-amber-400 text-sm" id="magic-res-old-score">--%</div>
-          </div>
-          <div>
-            <div class="text-[10px] text-gray-400">Hardened Score</div>
-            <div class="font-bold text-emerald-400 text-sm" id="magic-res-new-score">--%</div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- Modal Footer -->
-    <div class="px-6 py-4 border-t border-indigo-900/40 bg-indigo-950/20 flex items-center justify-between">
-      <div class="text-[11px] text-gray-400">
-        Non-destructive: creates new configs &amp; preserves existing project logic.
-      </div>
+<!-- ═══════════════════════════════════════════════
+     ⚡ AUTO-FIX & REMEDIATION PLAN MODAL
+     ═══════════════════════════════════════════════ -->
+<div id="auto-fix-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+  <div class="lg-modal flex flex-col w-full max-w-2xl max-h-[85vh] overflow-hidden">
+    <!-- Header -->
+    <div class="flex items-center justify-between px-6 py-4 border-b lg-border">
       <div class="flex items-center gap-3">
-        <button id="btn-cancel-magic" class="lg-btn-ghost text-xs px-4 py-2 text-gray-400 hover:text-white">Close</button>
-        <button id="btn-execute-magic" class="magic-btn text-xs px-5 py-2 flex items-center gap-2 font-bold text-white rounded-lg shadow-lg">
-          <span id="magic-btn-spinner" class="hidden animate-spin">🪄</span>
-          <span id="magic-btn-text">⚡ Transmute to Production SaaS</span>
-        </button>
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold" style="background: var(--c-accent-dim); color: var(--c-accent);">⚡</div>
+        <div>
+          <h3 id="auto-fix-modal-title" class="text-sm font-semibold lg-text-primary tracking-tight">Auto-Fix Remediation Hub</h3>
+          <p id="auto-fix-modal-subtitle" class="text-xs lg-text-muted">Autonomous remediation plan &amp; prompt generated</p>
+        </div>
+      </div>
+      <button id="btn-close-auto-fix-modal" class="lg-btn-icon">✕</button>
+    </div>
+
+    <!-- Body -->
+    <div class="p-6 flex flex-col gap-4 overflow-y-auto">
+      <!-- File Plan Info Banner -->
+      <div class="p-3.5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs" style="background: var(--c-surface-2); border-color: var(--c-border-mid);">
+        <div class="flex items-center gap-2.5">
+          <span class="text-xl">📋</span>
+          <div>
+            <div class="font-bold lg-text-primary text-xs">Remediation Plan Generated</div>
+            <div id="auto-fix-plan-path" class="font-mono text-xs font-semibold" style="color: var(--c-p2, #38bdf8);">.antigravity/gate-X-fix.md</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <span id="auto-fix-items-badge" class="px-2.5 py-0.5 rounded-full font-mono text-xs font-bold" style="background: var(--c-p1-bg); color: var(--c-p1); border: 1px solid var(--c-p1-border);">0 Actionable Items</span>
+        </div>
+      </div>
+
+      <!-- Instructions & AI Prompt -->
+      <div class="flex flex-col gap-2">
+        <div class="flex items-center justify-between">
+          <label class="text-xs font-bold lg-text-secondary uppercase tracking-wider">AI Autonomous Remediation Command</label>
+          <span class="text-xs lg-text-subtle">Run in Antigravity, Claude Code, or Cursor</span>
+        </div>
+        <div class="relative">
+          <pre id="auto-fix-prompt-display" class="w-full rounded-xl p-4 pr-32 font-mono text-xs leading-relaxed max-h-52 overflow-y-auto overflow-x-auto select-all whitespace-pre-wrap" style="background: #0d1117; color: #f0f6fc; border: 1px solid rgba(255,255,255,0.15); box-shadow: inset 0 2px 6px rgba(0,0,0,0.5);"></pre>
+          <button id="btn-copy-autofix-prompt" class="lg-btn-primary text-xs font-semibold px-3 py-1.5 rounded-lg shadow-md flex items-center gap-1.5 transition-all absolute top-3 right-3">
+            <span id="copy-autofix-icon">📋</span>
+            <span id="copy-autofix-label">Copy Prompt</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Actionable Tasks List Preview -->
+      <div class="flex flex-col gap-2">
+        <span class="text-xs font-bold lg-text-secondary uppercase tracking-wider">Actionable Tasks in Plan</span>
+        <div id="auto-fix-tasks-list" class="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1"></div>
       </div>
     </div>
 
+    <!-- Footer -->
+    <div class="px-6 py-3.5 border-t lg-border flex items-center justify-between">
+      <div class="text-xs lg-text-muted">
+        Apply with your AI pair programmer, then re-scan this gate to verify.
+      </div>
+      <button id="btn-close-autofix-footer" class="lg-btn-primary text-xs px-6 py-2 font-bold">
+        Got It
+      </button>
+    </div>
   </div>
 </div>
 
@@ -1650,6 +1642,6 @@
 
 <script src="js/terminal.js?v=20261025b"></script>
 <script src="js/ui-components.js?v=20261025b"></script>
-<script src="js/app.js?v=20261025b"></script>
+<script src="js/app.js?v=20261028a"></script>
 </body>
 </html>

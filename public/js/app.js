@@ -182,6 +182,35 @@ document.addEventListener('DOMContentLoaded', () => {
     magicResFilesCount: document.getElementById('magic-res-files-count'),
     magicResOldScore: document.getElementById('magic-res-old-score'),
     magicResNewScore: document.getElementById('magic-res-new-score'),
+    magicBackupPath: document.getElementById('magic-backup-path'),
+    btnRollbackMagic: document.getElementById('btn-rollback-magic'),
+    magicDiffList: document.getElementById('magic-diff-list'),
+
+    // Quick-Fix Diff Review Modal
+    quickFixDiffModal: document.getElementById('quick-fix-diff-modal'),
+    btnCloseQfModal: document.getElementById('btn-close-qf-modal'),
+    qfModalTitle: document.getElementById('qf-modal-title'),
+    qfModalSubtitle: document.getElementById('qf-modal-subtitle'),
+    qfBackupPath: document.getElementById('qf-backup-path'),
+    qfAdditionsBadge: document.getElementById('qf-additions-badge'),
+    qfDeletionsBadge: document.getElementById('qf-deletions-badge'),
+    qfDiffContent: document.getElementById('qf-diff-content'),
+    btnRollbackQf: document.getElementById('btn-rollback-qf'),
+    btnConfirmQf: document.getElementById('btn-confirm-qf'),
+
+    // Auto-Fix & Remediation Hub Modal
+    autoFixModal: document.getElementById('auto-fix-modal'),
+    btnCloseAutoFixModal: document.getElementById('btn-close-auto-fix-modal'),
+    btnCloseAutofixFooter: document.getElementById('btn-close-autofix-footer'),
+    autoFixModalTitle: document.getElementById('auto-fix-modal-title'),
+    autoFixModalSubtitle: document.getElementById('auto-fix-modal-subtitle'),
+    autoFixPlanPath: document.getElementById('auto-fix-plan-path'),
+    autoFixItemsBadge: document.getElementById('auto-fix-items-badge'),
+    autoFixPromptDisplay: document.getElementById('auto-fix-prompt-display'),
+    btnCopyAutofixPrompt: document.getElementById('btn-copy-autofix-prompt'),
+    copyAutofixIcon: document.getElementById('copy-autofix-icon'),
+    copyAutofixLabel: document.getElementById('copy-autofix-label'),
+    autoFixTasksList: document.getElementById('auto-fix-tasks-list'),
 
     // How to Use & Documentation Modals
     btnHowToUse: document.getElementById('btn-how-to-use'),
@@ -1613,36 +1642,132 @@ document.addEventListener('DOMContentLoaded', () => {
     showToast('Antigravity Audit Prompt copied to clipboard! Paste into your chat.', 'success');
   }
 
+  let currentAutoFixPrompt = '';
+
   async function generateAndCopyFix() {
-    if (!state.projectPath) return;
+    if (!state.projectPath) {
+      showToast('Select or scan a project first', 'warning');
+      return;
+    }
     const gateData = state.projectData?.gates?.[state.activeGateId];
     if (!gateData) {
       showToast('Scan this gate first to identify issues', 'warning');
       return;
     }
 
+    // Set button loading state
+    el.btnGenerateFix.disabled = true;
+    const originalBtnHtml = el.btnGenerateFix.innerHTML;
+    el.btnGenerateFix.innerHTML = '<span class="animate-spin inline-block mr-1">⏳</span> Generating...';
+
     const notes = el.ingestTextarea.value.trim();
 
     try {
-      const res = await fetch('/api/antigravity/write-fix', {
+      // 1. Run real automated auto-fix for the gate
+      const res = await fetch('/api/gates/auto-fix', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           projectPath: state.projectPath,
-          gateId: state.activeGateId,
-          notes
+          gateId: state.activeGateId
         })
       });
       const data = await res.json();
 
       if (data.success) {
-        navigator.clipboard.writeText(data.autoFixPrompt);
-        showToast(`Fix plan written to .antigravity/${state.activeGateId}-fix.md & prompt copied!`, 'success');
+        if (data.project) state.project = data.project;
+        if (data.gateResult) {
+          renderGateDetail(data.gateResult);
+          renderOverview();
+        }
+
+        if (data.appliedCount > 0) {
+          showToast(`⚡ Successfully applied ${data.appliedCount} automated fix(es)! Gate score: ${data.oldScore}% → ${data.newScore}%.`, 'success');
+        }
+
+        if (data.remainingCount === 0) {
+          showToast(`🎉 All checks passed cleanly! 100% compliance reached.`, 'success');
+          return;
+        }
+
+        currentAutoFixPrompt = data.autoFixPrompt || '';
+
+        // Graceful clipboard copy attempt for remaining tasks
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(currentAutoFixPrompt);
+          }
+        } catch (clipErr) {
+          console.warn('[Auto-Fix] Browser clipboard write blocked:', clipErr);
+        }
+
+        // Populate and open the Auto-Fix Remediation Modal for remaining items
+        if (el.autoFixModal) {
+          if (el.autoFixModalTitle) {
+            const gateNum = data.gateResult?.number ? `Gate ${data.gateResult.number}: ` : '';
+            const fixBadge = data.appliedCount > 0 ? ` (${data.appliedCount} Auto-Fixed)` : '';
+            el.autoFixModalTitle.textContent = `Remediation: ${gateNum}${data.gateResult?.name || state.activeGateId}${fixBadge}`;
+          }
+          if (el.autoFixPlanPath) {
+            el.autoFixPlanPath.textContent = data.fixFileRelativePath || data.fixFilePath || `.antigravity/${state.activeGateId}-fix.md`;
+          }
+          if (el.autoFixItemsBadge) {
+            const count = data.remainingCount !== undefined ? data.remainingCount : 0;
+            el.autoFixItemsBadge.textContent = `${count} Remaining Complex Item${count === 1 ? '' : 's'}`;
+            el.autoFixItemsBadge.style.background = count === 0 ? 'var(--c-pass-bg)' : 'var(--c-p1-bg)';
+            el.autoFixItemsBadge.style.color = count === 0 ? 'var(--c-pass)' : 'var(--c-p1)';
+            el.autoFixItemsBadge.style.borderColor = count === 0 ? 'var(--c-pass-border)' : 'var(--c-p1-border)';
+          }
+          if (el.autoFixPromptDisplay) {
+            el.autoFixPromptDisplay.textContent = currentAutoFixPrompt;
+          }
+
+          if (el.copyAutofixIcon) el.copyAutofixIcon.textContent = '📋';
+          if (el.copyAutofixLabel) el.copyAutofixLabel.textContent = 'Copy Prompt';
+
+          // Render tasks list preview for remaining items
+          if (el.autoFixTasksList) {
+            el.autoFixTasksList.innerHTML = '';
+            const remaining = (data.gateResult?.findings || []).filter(f => f.severity !== 'PASSED');
+            if (remaining.length > 0) {
+              remaining.forEach(f => {
+                const item = document.createElement('div');
+                item.className = 'p-2.5 rounded-lg border text-xs flex items-start gap-2.5 transition-colors';
+                item.style.background = 'var(--c-surface-2)';
+                item.style.borderColor = 'var(--c-border-mid)';
+                const sevBadge = f.severity === 'P0' 
+                  ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded badge-p0 shrink-0">P0</span>'
+                  : (f.severity === 'P1'
+                    ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded badge-p1 shrink-0">P1</span>'
+                    : '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded badge-p2 shrink-0">P2</span>');
+                item.innerHTML = `
+                  <div class="mt-0.5 shrink-0">${sevBadge}</div>
+                  <div class="flex-1 min-w-0">
+                    <div class="font-bold lg-text-primary truncate">${escapeHtml(f.title)}</div>
+                    <div class="text-[11px] lg-text-muted font-mono truncate">${escapeHtml(f.file || '')}${f.line ? `:${f.line}` : ''}</div>
+                  </div>
+                `;
+                el.autoFixTasksList.appendChild(item);
+              });
+            } else {
+              el.autoFixTasksList.innerHTML = '<div class="text-xs py-2 px-3 rounded-lg border flex items-center gap-2 font-medium" style="background: var(--c-pass-bg); color: var(--c-pass); border-color: var(--c-pass-border);"><span>✓</span> All checks passing cleanly in this gate!</div>';
+            }
+          }
+
+          el.autoFixModal.classList.remove('hidden');
+        }
+
+        if (data.appliedCount === 0) {
+          showToast(`Remediation plan ready in ${data.fixFileRelativePath || '.antigravity/'}!`, 'info');
+        }
       } else {
-        showToast(data.error || 'Failed to generate fix plan', 'error');
+        showToast(data.error || 'Failed to auto-fix gate', 'error');
       }
     } catch (e) {
-      showToast('Error generating fix plan', 'error');
+      showToast(`Error running auto-fix: ${e.message}`, 'error');
+    } finally {
+      el.btnGenerateFix.disabled = false;
+      el.btnGenerateFix.innerHTML = originalBtnHtml;
     }
   }
 
@@ -2602,6 +2727,138 @@ Audit matrix across all 12 gates has been verified and signed off.`;
       el.btnCloseHistory.addEventListener('click', () => el.historyModal.classList.add('hidden'));
     }
 
+    // -------------------------------------------------------------------------
+    // 🛡️ Unified Diff Formatter & Quick-Fix Backup Review System
+    // -------------------------------------------------------------------------
+    let activeQfBackupId = null;
+    let activeMagicBackupId = null;
+
+    function formatDiffHtml(diffText) {
+      if (!diffText) return '<div class="text-gray-500 py-1">No diff available.</div>';
+      return diffText.split('\n').map(line => {
+        const escaped = escapeHtml(line);
+        if (line.startsWith('+++') || line.startsWith('---')) {
+          return `<div class="font-bold text-gray-400 select-none">${escaped}</div>`;
+        }
+        if (line.startsWith('@@')) {
+          return `<div class="text-cyan-400 bg-cyan-950/20 px-1 py-0.5 rounded my-0.5 font-bold select-none">${escaped}</div>`;
+        }
+        if (line.startsWith('+')) {
+          return `<div class="bg-emerald-950/40 text-emerald-300 px-1 border-l-2 border-emerald-500">${escaped}</div>`;
+        }
+        if (line.startsWith('-')) {
+          return `<div class="bg-rose-950/40 text-rose-300 px-1 border-l-2 border-rose-500">${escaped}</div>`;
+        }
+        return `<div class="text-gray-300 px-1">${escaped}</div>`;
+      }).join('');
+    }
+
+    function showQuickFixDiffModal(result, fixId) {
+      if (!el.quickFixDiffModal) return;
+      activeQfBackupId = result.backup?.id || null;
+
+      if (el.qfModalTitle) el.qfModalTitle.textContent = result.title || fixId;
+      if (el.qfModalSubtitle) el.qfModalSubtitle.textContent = result.description || 'Deterministic code remediation verified';
+      if (el.qfBackupPath) el.qfBackupPath.textContent = result.backup?.path || '.launchgate/backups/...';
+
+      const diffs = result.diffPreview || [];
+      const totalAdd = diffs.reduce((sum, d) => sum + (d.linesAdded || 0), 0);
+      const totalDel = diffs.reduce((sum, d) => sum + (d.linesRemoved || 0), 0);
+      if (el.qfAdditionsBadge) el.qfAdditionsBadge.textContent = `+${totalAdd} lines`;
+      if (el.qfDeletionsBadge) el.qfDeletionsBadge.textContent = `-${totalDel} lines`;
+
+      const fullDiffText = diffs.map(d => d.diff).join('\n\n') || result.message || 'No textual diff changes';
+      if (el.qfDiffContent) el.qfDiffContent.innerHTML = formatDiffHtml(fullDiffText);
+
+      el.quickFixDiffModal.classList.remove('hidden');
+    }
+
+    if (el.btnCloseQfModal && el.quickFixDiffModal) {
+      el.btnCloseQfModal.addEventListener('click', () => {
+        el.quickFixDiffModal.classList.add('hidden');
+      });
+    }
+
+    if (el.btnConfirmQf && el.quickFixDiffModal) {
+      el.btnConfirmQf.addEventListener('click', async () => {
+        el.quickFixDiffModal.classList.add('hidden');
+        showToast('Changes kept. Re-scanning gate...', 'success');
+        await scanSingleGate(state.activeGateId);
+      });
+    }
+
+    if (el.btnRollbackQf && el.quickFixDiffModal) {
+      el.btnRollbackQf.addEventListener('click', async () => {
+        if (!activeQfBackupId || !state.projectPath) return;
+        el.btnRollbackQf.disabled = true;
+        el.btnRollbackQf.textContent = 'Restoring...';
+        try {
+          const res = await fetch('/api/backups/rollback', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ projectPath: state.projectPath, backupId: activeQfBackupId })
+          });
+          const data = await res.json();
+          if (data.success) {
+            showToast('Quick fix reverted! Original file restored from backup.', 'success');
+            el.quickFixDiffModal.classList.add('hidden');
+            await scanSingleGate(state.activeGateId);
+          } else {
+            showToast(`Rollback failed: ${data.error}`, 'error');
+          }
+        } catch (err) {
+          showToast(`Rollback error: ${err.message}`, 'error');
+        } finally {
+          el.btnRollbackQf.disabled = false;
+          el.btnRollbackQf.innerHTML = '<span>↩️</span> Rollback This Fix';
+        }
+      });
+    }
+
+    // Auto-Fix & Remediation Hub Modal Listeners
+    if (el.btnCloseAutoFixModal && el.autoFixModal) {
+      el.btnCloseAutoFixModal.addEventListener('click', () => {
+        el.autoFixModal.classList.add('hidden');
+      });
+    }
+
+    if (el.btnCloseAutofixFooter && el.autoFixModal) {
+      el.btnCloseAutofixFooter.addEventListener('click', () => {
+        el.autoFixModal.classList.add('hidden');
+      });
+    }
+
+    if (el.btnCopyAutofixPrompt) {
+      el.btnCopyAutofixPrompt.addEventListener('click', async () => {
+        if (!currentAutoFixPrompt) return;
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(currentAutoFixPrompt);
+          } else {
+            throw new Error('Clipboard API unavailable');
+          }
+          if (el.copyAutofixIcon) el.copyAutofixIcon.textContent = '✓';
+          if (el.copyAutofixLabel) el.copyAutofixLabel.textContent = 'Copied!';
+          showToast('Remediation prompt copied to clipboard!', 'success');
+          setTimeout(() => {
+            if (el.copyAutofixIcon) el.copyAutofixIcon.textContent = '📋';
+            if (el.copyAutofixLabel) el.copyAutofixLabel.textContent = 'Copy Prompt';
+          }, 2500);
+        } catch (err) {
+          // Fallback: select text in pre for manual copy
+          const pre = el.autoFixPromptDisplay;
+          if (pre) {
+            const range = document.createRange();
+            range.selectNodeContents(pre);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+            showToast('Prompt selected! Press Ctrl+C to copy.', 'info');
+          }
+        }
+      });
+    }
+
     // Quick-Fix Engine Event Delegation (Phase 1)
     if (el.findingsContainer) {
       el.findingsContainer.addEventListener('click', async (e) => {
@@ -2619,14 +2876,32 @@ Audit matrix across all 12 gates has been verified and signed off.`;
           const res = await fetch('/api/fixes/apply', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ projectPath: state.projectPath, fixId })
+            body: JSON.stringify({ 
+              projectPath: state.projectPath, 
+              fixId,
+              gateId: state.activeGateId
+            })
           });
           const data = await res.json();
 
           if (data.success && data.result.success) {
-            showToast(data.result.message || 'Quick patch applied successfully!', 'success');
-            // Auto-rescan current gate to reflect the fix immediately
-            await scanSingleGate(state.activeGateId);
+            quickFixBtn.disabled = true;
+            quickFixBtn.innerHTML = '✓ Patch Applied';
+            quickFixBtn.style.background = 'var(--c-pass)';
+            quickFixBtn.style.color = '#ffffff';
+
+            showToast('⚡ Patch written to disk! Re-evaluating gate...', 'success');
+
+            // Instantly update gate view and overview with fresh results
+            if (data.newGateResult) {
+              if (data.project) state.project = data.project;
+              renderGateDetail(data.newGateResult);
+              renderOverview();
+            } else if (state.activeGateId) {
+              await runGate(state.activeGateId);
+            }
+
+            showQuickFixDiffModal(data.result, fixId);
           } else {
             showToast(data.error || data.result?.message || 'Quick patch failed', 'error');
             quickFixBtn.disabled = false;
@@ -2909,6 +3184,82 @@ Audit matrix across all 12 gates has been verified and signed off.`;
           el.magicResFilesCount.textContent = result.changesCount;
           el.magicResOldScore.textContent = `${state.projectData?.overallScore || 0}%`;
           el.magicResNewScore.textContent = `${result.newOverallScore}%`;
+
+          // Display Backup Details
+          if (el.magicBackupPath) {
+            el.magicBackupPath.textContent = result.backup?.path || '.launchgate/backups/...';
+          }
+          activeMagicBackupId = result.backup?.id || null;
+
+          // Render Changes & Diffs
+          if (el.magicDiffList) {
+            el.magicDiffList.innerHTML = '';
+            const diffs = result.diffPreview || [];
+            if (diffs.length > 0) {
+              diffs.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'rounded-lg border border-indigo-900/40 bg-slate-900/60 overflow-hidden';
+                const isCreated = item.action === 'created';
+                card.innerHTML = `
+                  <div class="diff-header px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-slate-800/50 transition-colors select-none">
+                    <div class="flex items-center gap-2 text-xs">
+                      <span class="font-bold text-gray-200 font-mono">${escapeHtml(item.file)}</span>
+                      <span class="text-[9px] font-bold px-1.5 py-0.5 rounded ${isCreated ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'}">${isCreated ? 'CREATED' : 'MODIFIED'}</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-[10px] font-mono">
+                      <span class="text-emerald-400">+${item.linesAdded || 0}</span>
+                      <span class="text-rose-400">-${item.linesRemoved || 0}</span>
+                      <span class="diff-chevron text-gray-400 text-xs transition-transform">▼</span>
+                    </div>
+                  </div>
+                  <div class="diff-body hidden px-3 py-2 border-t border-slate-800 bg-[#090d16] font-mono text-[11px] leading-relaxed max-h-56 overflow-y-auto overflow-x-auto text-gray-300">
+                    ${formatDiffHtml(item.diff)}
+                  </div>
+                `;
+                card.querySelector('.diff-header').addEventListener('click', () => {
+                  const body = card.querySelector('.diff-body');
+                  const chevron = card.querySelector('.diff-chevron');
+                  const isHidden = body.classList.toggle('hidden');
+                  chevron.style.transform = isHidden ? 'rotate(0deg)' : 'rotate(180deg)';
+                });
+                el.magicDiffList.appendChild(card);
+              });
+            } else {
+              el.magicDiffList.innerHTML = '<div class="text-xs text-gray-400 italic py-2 text-center">No textual modifications recorded.</div>';
+            }
+          }
+
+          // Hook up Magic Rollback Button
+          if (el.btnRollbackMagic && !el.btnRollbackMagic._hasListener) {
+            el.btnRollbackMagic._hasListener = true;
+            el.btnRollbackMagic.addEventListener('click', async () => {
+              if (!activeMagicBackupId || !state.projectPath) return;
+              if (!confirm('Rollback all transmutation changes? Your original files will be restored from the backup.')) return;
+
+              el.btnRollbackMagic.disabled = true;
+              el.btnRollbackMagic.textContent = 'Restoring...';
+              try {
+                const res = await fetch('/api/backups/rollback', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ projectPath: state.projectPath, backupId: activeMagicBackupId })
+                });
+                const rollbackData = await res.json();
+                if (rollbackData.success) {
+                  showToast('Rollback successful! Original project files restored.', 'success');
+                  el.magicModal.classList.add('hidden');
+                  await scanAllGates();
+                } else {
+                  showToast(`Rollback failed: ${rollbackData.error}`, 'error');
+                }
+              } catch (err) {
+                showToast(`Rollback error: ${err.message}`, 'error');
+              } finally {
+                el.btnRollbackMagic.disabled = false;
+                el.btnRollbackMagic.innerHTML = '<span>↩️</span> Rollback Transmutation';
+              }
+            });
+          }
 
           // Update Project state and dashboard UI
           state.projectData = {

@@ -23,7 +23,8 @@ const { generateCertificate } = require('./backend/services/certificate-generato
 const { generateSarifReport } = require('./backend/services/sarif-generator');
 const { buildComplianceMatrix } = require('./backend/services/compliance-mapper');
 const { exportAgentRule, getAvailableAgentTypes } = require('./backend/services/agent-rules-exporter');
-const { applyQuickFix, QUICK_FIXES } = require('./backend/services/quick-fix-engine');
+const { applyQuickFix, getApplicableFix, QUICK_FIXES } = require('./backend/services/quick-fix-engine');
+const { listBackups, restoreBackup } = require('./backend/services/backup-service');
 const { analyzeVibeSaaS, executeTurnkeyTransmutation, TURNKEY_MODULES } = require('./backend/services/magic-turnkey-engine');
 const { installGitHook } = require('./backend/services/git-hooks-installer');
 const { browseDirectory } = require('./backend/services/directory-browser');
@@ -724,11 +725,18 @@ app.post('/api/antigravity/write-fix', verifySession, (req, res) => {
       saveProject(projectPath, { gates: project.gates });
     }
 
+    const unpassed = (gateResult.findings || []).filter(f => f.severity !== 'PASSED');
     res.json({
       success: true,
       fixFilePath,
+      fixFileRelativePath: path.relative(projectPath, fixFilePath).replace(/\\/g, '/'),
       autoFixPrompt,
-      gateId
+      gateId,
+      gateNumber: gateResult.number,
+      gateName: gateResult.name,
+      stats: gateResult.stats,
+      actionableCount: unpassed.length,
+      findings: unpassed
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -892,15 +900,132 @@ app.get('/api/reports/compliance', verifySession, (req, res) => {
 // 1-Click Deterministic Quick-Fix Engine (Phase 1)
 // ---------------------------------------------------------------------------
 
-app.post('/api/fixes/apply', verifySession, (req, res) => {
-  const { projectPath, fixId } = req.body;
+app.post('/api/fixes/apply', verifySession, async (req, res) => {
+  const { projectPath, fixId, gateId } = req.body;
   if (!projectPath || !fixId) {
     return res.status(400).json({ success: false, error: 'Missing projectPath or fixId' });
   }
 
   try {
     const result = applyQuickFix(projectPath, fixId);
-    res.json({ success: true, result });
+    let newGateResult = null;
+    let project = null;
+    if (gateId) {
+      const scanRes = await runGate(projectPath, gateId);
+      newGateResult = scanRes.gateResult;
+      project = scanRes.project;
+    }
+    res.json({ success: true, result, newGateResult, project });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Full Gate Auto-Fix Handler: executes all available deterministic fixes then re-scans
+app.post('/api/gates/auto-fix', verifySession, async (req, res) => {
+  const { projectPath, gateId } = req.body;
+  if (!projectPath || !gateId) {
+    return res.status(400).json({ success: false, error: 'Missing projectPath or gateId' });
+  }
+
+  try {
+    let project = getProject(projectPath);
+    let gateResult = project?.gates?.[gateId];
+    if (!gateResult) {
+      const scan = await runGate(projectPath, gateId);
+      gateResult = scan.gateResult;
+      project = scan.project;
+    }
+
+    const oldScore = gateResult.score;
+    const actionable = (gateResult.findings || []).filter(f => f.severity !== 'PASSED');
+    const applied = [];
+    const failed = [];
+
+    // Apply all available deterministic quick fixes
+    for (const finding of actionable) {
+      const applicable = getApplicableFix(finding.rule || finding.id || finding.title);
+      if (applicable && !applied.some(a => a.fixId === applicable.fixId)) {
+        try {
+          const patchResult = applyQuickFix(projectPath, applicable.fixId);
+          applied.push({
+            fixId: applicable.fixId,
+            title: applicable.title,
+            findingTitle: finding.title,
+            patchResult
+          });
+        } catch (err) {
+          failed.push({ fixId: applicable.fixId, error: err.message });
+        }
+      }
+    }
+
+    // Always re-run the gate to get the updated ground truth
+    const scanAfter = await runGate(projectPath, gateId);
+    const updatedGateResult = scanAfter.gateResult;
+    const updatedProject = scanAfter.project;
+
+    // Check what remains actionable
+    const remainingActionable = (updatedGateResult.findings || []).filter(f => f.severity !== 'PASSED');
+    let autoFixPrompt = '';
+    let fixFilePath = null;
+    if (remainingActionable.length > 0) {
+      fixFilePath = writeGateFixPlan(projectPath, updatedGateResult);
+      autoFixPrompt = generateAutoFixPrompt(updatedGateResult, projectPath);
+    }
+
+    res.json({
+      success: true,
+      appliedCount: applied.length,
+      applied,
+      failed,
+      oldScore,
+      newScore: updatedGateResult.score,
+      newStatus: updatedGateResult.status,
+      gateResult: updatedGateResult,
+      project: updatedProject,
+      remainingCount: remainingActionable.length,
+      fixFilePath,
+      fixFileRelativePath: fixFilePath ? path.relative(projectPath, fixFilePath).replace(/\\/g, '/') : null,
+      autoFixPrompt
+    });
+  } catch (err) {
+    console.error('Auto-Fix error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// List physical on-disk backups
+app.get('/api/backups/list', verifySession, (req, res) => {
+  const { projectPath } = req.query;
+  if (!projectPath) {
+    return res.status(400).json({ success: false, error: 'Missing projectPath' });
+  }
+
+  try {
+    const backups = listBackups(projectPath);
+    res.json({ success: true, backups });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Rollback / Restore physical on-disk backup
+app.post('/api/backups/rollback', verifySession, async (req, res) => {
+  const { projectPath, backupId } = req.body;
+  if (!projectPath || !backupId) {
+    return res.status(400).json({ success: false, error: 'Missing projectPath or backupId' });
+  }
+
+  try {
+    const result = restoreBackup(projectPath, backupId);
+    if (!result.success) {
+      return res.status(500).json({ success: false, error: result.message || 'Failed to restore backup' });
+    }
+
+    // Re-run gates after restoration to re-calculate score
+    const { results, project } = await runAllGates(projectPath, null, null);
+    res.json({ success: true, result, overallScore: project.overallScore, gates: results });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

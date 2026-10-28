@@ -24,16 +24,70 @@ const IGNORED_DIRS = new Set([
   '.launchgate',
   '.antigravity',
   '.idea',
-  '.vscode'
+  '.vscode',
+  '.tools',
+  '.agents',
+  '.vercel',
+  '.expo',
+  '.serverless',
+  '.husky',
+  'test-results',
+  'playwright-report',
+  '.nyc_output',
+  '.parcel-cache',
+  '.svelte-kit'
+]);
+
+const IGNORED_EXTS = new Set([
+  '.log',
+  '.lock',
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.gif',
+  '.svg',
+  '.webp',
+  '.ico',
+  '.pdf',
+  '.docx',
+  '.xlsx',
+  '.xls',
+  '.csv',
+  '.zip',
+  '.tar',
+  '.gz',
+  '.mp4',
+  '.mov',
+  '.mp3',
+  '.wav',
+  '.ttf',
+  '.woff',
+  '.woff2',
+  '.eot',
+  '.map'
 ]);
 
 const MAX_FILE_SIZE = 1024 * 1024 * 3; // 3MB limit for text scanning
 
+// Prioritized application roots
+const PRIORITY_NAMES = new Set([
+  'src', 'app', 'pages', 'api', 'routes', 'lib', 'components', 
+  'server', 'models', 'controllers', 'services', 'middleware', 'config', '.github'
+]);
+
 /**
  * Recursively crawl project directory and return list of relative file paths
  */
-function crawlProject(projectPath, maxFiles = 3000) {
+function crawlProject(projectPath, maxFiles = 10000) {
   const fileList = [];
+
+  function shouldIgnoreDir(name) {
+    if (IGNORED_DIRS.has(name)) return true;
+    if (name.startsWith('dist-')) return true;
+    // Ignore hidden dot directories other than .github
+    if (name.startsWith('.') && name !== '.github') return true;
+    return false;
+  }
 
   function walk(currentDir) {
     if (fileList.length >= maxFiles) return;
@@ -45,6 +99,17 @@ function crawlProject(projectPath, maxFiles = 3000) {
       return;
     }
 
+    // Sort entries so priority application directories and root config files are visited first
+    entries.sort((a, b) => {
+      const aPriority = PRIORITY_NAMES.has(a.name) ? 0 : 1;
+      const bPriority = PRIORITY_NAMES.has(b.name) ? 0 : 1;
+      if (aPriority !== bPriority) return aPriority - bPriority;
+      // Put files before directories so root configs (package.json, next.config, etc.) are indexed early
+      if (a.isFile() && b.isDirectory()) return -1;
+      if (a.isDirectory() && b.isFile()) return 1;
+      return a.name.localeCompare(b.name);
+    });
+
     for (const entry of entries) {
       if (fileList.length >= maxFiles) break;
 
@@ -52,10 +117,13 @@ function crawlProject(projectPath, maxFiles = 3000) {
       const relative = path.relative(projectPath, fullPath).replace(/\\/g, '/');
 
       if (entry.isDirectory()) {
-        if (!IGNORED_DIRS.has(entry.name)) {
+        if (!shouldIgnoreDir(entry.name)) {
           walk(fullPath);
         }
       } else if (entry.isFile()) {
+        const ext = path.extname(entry.name).toLowerCase();
+        if (IGNORED_EXTS.has(ext)) continue;
+
         try {
           const stat = fs.statSync(fullPath);
           if (stat.size <= MAX_FILE_SIZE) {

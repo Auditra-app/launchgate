@@ -1,3 +1,4 @@
+const fs = require('fs');
 const path = require('path');
 const { readFile, getSnippet } = require('../services/file-crawler');
 
@@ -45,7 +46,12 @@ module.exports = {
         }
 
         // Non-root user check
-        const hasNonRootUser = /USER\s+(?:node|nonroot|[0-9]{3,})/i.test(dockerContent);
+        // Check final stage of multi-stage Dockerfile or whole content for single-stage
+        const lastStage = dockerContent.split(/^FROM\s+/gim).pop() || dockerContent;
+        const userMatches = [...lastStage.matchAll(/^\s*USER\s+([^\s#]+)/gim)];
+        const lastUser = userMatches.length > 0 ? userMatches[userMatches.length - 1][1].toLowerCase() : null;
+        const isRoot = !lastUser || lastUser === 'root' || lastUser === '0' || lastUser.startsWith('root:') || lastUser.startsWith('0:');
+        const hasNonRootUser = !isRoot;
         if (!hasNonRootUser) {
           findings.push({
             id: 'INFRA-DOCKER-ROOT-USER',
@@ -96,12 +102,27 @@ module.exports = {
       });
       passedCount++;
     } else {
-      const hasHealthRoute = files.some(f => 
-        f.includes('api/health') ||
-        f.includes('routes/health') ||
-        f.includes('healthz') ||
-        f.includes('/ping')
-      );
+      const hasHealthRoute = files.some(f => {
+        const norm = f.replace(/\\/g, '/').toLowerCase();
+        return norm.includes('api/health') ||
+          norm.includes('routes/health') ||
+          norm.includes('healthz') ||
+          norm.includes('/ping') ||
+          norm.endsWith('health.ts') ||
+          norm.endsWith('health.js');
+      });
+
+      // Direct physical disk verification as fallback
+      const commonHealthPaths = [
+        'src/app/api/health/route.ts', 'src/app/api/health/route.js',
+        'app/api/health/route.ts', 'app/api/health/route.js',
+        'src/pages/api/health.ts', 'src/pages/api/health.js',
+        'pages/api/health.ts', 'pages/api/health.js',
+        'routes/health.js', 'routes/health.ts',
+        'api/health.js', 'api/health.ts',
+        'src/lib/health.ts', 'lib/health.ts'
+      ];
+      const hasPhysicalHealth = commonHealthPaths.some(p => fs.existsSync(path.join(projectPath, p)));
 
       // Also check server files directly (e.g. server.js or app.py containing app.get('/health' or '/api/system/health')
       const serverFiles = files.filter(f => f.endsWith('server.js') || f.endsWith('app.js') || f.endsWith('main.py') || f.includes('health'));
@@ -114,7 +135,7 @@ module.exports = {
         }
       }
 
-      if (hasHealthRoute || hasHealthInCode) {
+      if (hasHealthRoute || hasPhysicalHealth || hasHealthInCode) {
         findings.push({
           id: 'INFRA-HEALTHCHECK-OK',
           severity: 'PASSED',
@@ -138,12 +159,13 @@ module.exports = {
     }
 
     // 3. CI/CD Pipeline Configuration
-    const hasCiCd = files.some(f => 
-      f.startsWith('.github/workflows/') ||
-      f.includes('cloudbuild.yaml') ||
-      f.includes('gitlab-ci.yml') ||
-      f.includes('bitbucket-pipelines.yml')
-    );
+    const hasCiCd = files.some(f => {
+      const norm = f.replace(/\\/g, '/');
+      return norm.startsWith('.github/workflows/') ||
+        norm.includes('cloudbuild.yaml') ||
+        norm.includes('gitlab-ci.yml') ||
+        norm.includes('bitbucket-pipelines.yml');
+    }) || (fs.existsSync(path.join(projectPath, '.github', 'workflows')) && fs.readdirSync(path.join(projectPath, '.github', 'workflows')).length > 0);
 
     if (!hasCiCd) {
       findings.push({
@@ -202,23 +224,34 @@ module.exports = {
       }
     } else {
       let hasSecurityHeaders = false;
-      const configFiles = files.filter(f => 
-        f.includes('next.config') || 
-        f.includes('middleware') || 
-        f.includes('server.js') || 
-        f.includes('helmet')
-      );
+      // Direct physical check for security-headers.json or next.config with security headers
+      if (fs.existsSync(path.join(projectPath, 'security-headers.json'))) {
+        hasSecurityHeaders = true;
+      }
 
-      for (const cf of configFiles) {
-        const c = readFile(projectPath, cf);
-        if (c && (
-          c.includes('X-Frame-Options') ||
-          c.includes('Strict-Transport-Security') ||
-          c.includes('Content-Security-Policy') ||
-          c.includes('helmet(')
-        )) {
-          hasSecurityHeaders = true;
-          break;
+      if (!hasSecurityHeaders) {
+        const configFiles = files.filter(f => {
+          const norm = f.replace(/\\/g, '/');
+          return norm.includes('next.config') || 
+            norm.includes('middleware') || 
+            norm.includes('server.js') || 
+            norm.includes('helmet') ||
+            norm === 'security-headers.json' ||
+            norm.endsWith('/security-headers.json');
+        });
+
+        for (const cf of configFiles) {
+          const c = readFile(projectPath, cf);
+          if (c && (
+            c.includes('X-Frame-Options') ||
+            c.includes('Strict-Transport-Security') ||
+            c.includes('Content-Security-Policy') ||
+            c.includes('helmet(') ||
+            c.includes('securityHeaders')
+          )) {
+            hasSecurityHeaders = true;
+            break;
+          }
         }
       }
 
