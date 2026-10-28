@@ -10,6 +10,7 @@ const crypto = require('crypto');
 const { TRANSMUTERS } = require('./magic-turnkey-engine');
 const { detectStack } = require('./stack-detector');
 const { crawlProject } = require('./file-crawler');
+const { captureAndBackupWrites, buildUnifiedDiff, restoreBackup, rollbackStore } = require('./backup-service');
 
 const QUICK_FIXES = {
   'fix-env-example': {
@@ -108,7 +109,7 @@ const QUICK_FIXES = {
   'fix-docker-prod': {
     title: 'Generate Multi-Stage Dockerfile',
     description: 'Creates an optimized multi-stage container with non-root user and docker-compose.prod.yml.',
-    applicableRules: ['multi-stage', 'non-root', 'dockerignore', 'rule 11.1', 'rule 11.2', 'rule 11.3'],
+    applicableRules: ['multi-stage', 'non-root', 'dockerignore', 'rule 11.1', 'rule 11.2', 'rule 11.3', 'infra-docker-root-user', 'infra-docker-single-stage'],
     apply: (projectPath) => {
       const files = crawlProject(projectPath);
       const stack = detectStack(projectPath, files);
@@ -242,141 +243,23 @@ function getApplicableFix(findingRule) {
   return null;
 }
 
-// ---------------------------------------------------------------------------
-// Write capture + diff + rollback support
-// ---------------------------------------------------------------------------
-const rollbackStore = new Map();
-const MAX_ROLLBACK_POINTS = 40;
-
-function safeReadText(absPath) {
-  try {
-    return fs.readFileSync(absPath, 'utf8');
-  } catch (e) {
-    return null;
-  }
-}
-
-/**
- * Intercept synchronous writes performed while a quick fix runs so we can show
- * a real diff and undo the change if post-fix verification fails.
- */
-function captureFileWrites(fn) {
-  const backups = new Map();
-  const originalWrite = fs.writeFileSync;
-  const originalAppend = fs.appendFileSync;
-
-  const record = (file) => {
-    if (typeof file !== 'string') return;
-    const abs = path.resolve(file);
-    if (backups.has(abs)) return;
-    const existed = fs.existsSync(abs);
-    backups.set(abs, { existed, before: existed ? safeReadText(abs) : null });
-  };
-
-  fs.writeFileSync = function capturedWrite(file, ...args) {
-    record(file);
-    return originalWrite.call(fs, file, ...args);
-  };
-  fs.appendFileSync = function capturedAppend(file, ...args) {
-    record(file);
-    return originalAppend.call(fs, file, ...args);
-  };
-
-  try {
-    return { value: fn(), backups };
-  } finally {
-    fs.writeFileSync = originalWrite;
-    fs.appendFileSync = originalAppend;
-  }
-}
-
-/**
- * Compact unified diff using common prefix/suffix trimming. Config and source
- * files touched by quick fixes are small, so this stays readable and cheap.
- */
-function buildUnifiedDiff(file, backup, afterText) {
-  const after = (afterText === null ? '' : afterText).split(/\r?\n/);
-  const before = backup.existed && backup.before !== null ? backup.before.split(/\r?\n/) : [];
-
-  if (!backup.existed) {
-    const added = after.slice(0, 240).map(line => `+${line}`);
-    if (after.length > 240) added.push(`+... (${after.length - 240} more lines)`);
-    return [`--- /dev/null`, `+++ b/${file}`, `@@ -0,0 +1,${after.length} @@`, ...added].join('\n');
-  }
-
-  if (backup.before === null) {
-    return `--- a/${file}\n+++ b/${file}\n[content changed; original could not be read for diff]`;
-  }
-
-  let start = 0;
-  while (start < before.length && start < after.length && before[start] === after[start]) start++;
-  let endA = before.length - 1;
-  let endB = after.length - 1;
-  while (endA >= start && endB >= start && before[endA] === after[endB]) {
-    endA--;
-    endB--;
-  }
-
-  const removed = before.slice(start, endA + 1);
-  const added = after.slice(start, endB + 1);
-  if (removed.length === 0 && added.length === 0) {
-    return `--- a/${file}\n+++ b/${file}\n[no textual change]`;
-  }
-
-  const lines = [
-    `--- a/${file}`,
-    `+++ b/${file}`,
-    `@@ -${start + 1},${removed.length} +${start + 1},${added.length} @@`
-  ];
-  for (const line of removed.slice(0, 200)) lines.push(`-${line}`);
-  for (const line of added.slice(0, 200)) lines.push(`+${line}`);
-  if (removed.length > 200) lines.push(`-... (${removed.length - 200} more lines)`);
-  if (added.length > 200) lines.push(`+... (${added.length - 200} more lines)`);
-  return lines.join('\n');
-}
-
 function applyQuickFix(projectPath, fixId) {
   const fix = QUICK_FIXES[fixId];
   if (!fix) {
     throw new Error(`Unknown quick fix ID: ${fixId}`);
   }
 
-  const { value: result, backups } = captureFileWrites(() => fix.apply(projectPath));
-
-  // Include any files the fix reported changing, even if it wrote through a
-  // path we did not intercept.
-  if (result && Array.isArray(result.changes)) {
-    for (const change of result.changes) {
-      if (!change || !change.file) continue;
-      const abs = path.resolve(projectPath, change.file);
-      if (!backups.has(abs)) {
-        backups.set(abs, { existed: fs.existsSync(abs), before: safeReadText(abs) });
-      }
-    }
-  }
-
-  const diffPreview = [];
-  const rollbackFiles = [];
-  for (const [abs, backup] of backups) {
-    const relative = path.relative(projectPath, abs).replace(/\\/g, '/');
-    const after = safeReadText(abs);
-    diffPreview.push({ file: relative, diff: buildUnifiedDiff(relative, backup, after) });
-    rollbackFiles.push({ abs, ...backup });
-  }
-
-  let rollbackToken = null;
-  if (rollbackFiles.length > 0) {
-    rollbackToken = crypto.randomUUID();
-    rollbackStore.set(rollbackToken, { projectPath, files: rollbackFiles, createdAt: Date.now() });
-    while (rollbackStore.size > MAX_ROLLBACK_POINTS) {
-      rollbackStore.delete(rollbackStore.keys().next().value);
-    }
-  }
+  const { result, backup, diffPreview, changedFiles, rollbackToken } = captureAndBackupWrites(
+    projectPath,
+    `Quick Fix: ${fix.title || fixId}`,
+    () => fix.apply(projectPath)
+  );
 
   return {
     ...(result || {}),
+    backup,
     diffPreview,
-    changedFiles: diffPreview.map(item => item.file),
+    changedFiles,
     rollbackToken
   };
 }
@@ -387,9 +270,13 @@ function revertQuickFix(token) {
     return { success: false, message: 'Unknown or expired rollback token.' };
   }
 
+  if (entry.backupId) {
+    return restoreBackup(entry.projectPath, entry.backupId);
+  }
+
   const reverted = [];
   const failed = [];
-  for (const file of entry.files) {
+  for (const file of entry.files || []) {
     try {
       if (!file.existed) {
         if (fs.existsSync(file.abs)) fs.unlinkSync(file.abs);
